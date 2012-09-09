@@ -8,8 +8,9 @@ About
 
   This takes a text transcript of datestamped commentary, made by
 multiple people watching copies of the same video independently, and
-transforms it into another format. Each person's comments can be
-shifted to correct for buffering, pausing, starting early/late, etc.
+transforms it into another format. The time of each person's
+comments can be shifted to correct for buffering, pausing, starting
+early/late, etc.
 
   It can read from the following sources:
     Html MockTM event transcripts from the LousyCanuck blog.
