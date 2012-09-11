@@ -17,6 +17,11 @@ def fetch_snarks(src_path, first_msg, options={}):
   See: http://twitter.com/MockTM
   See: http://freethoughtblogs.com/lousycanuck/
 
+  This parser adds non-standard attributes to snarks:
+  "user_url" and "msg_url", links to the user's twitter
+  page and to the specific tweet. Exporters might
+  disregard this info.
+
   :param src_path: A url, or saved html source.
   :param first_msg: If not None, ignore messages until this substring is found.
   :param options: A dict of extra options specific to this parser.
@@ -27,7 +32,7 @@ def fetch_snarks(src_path, first_msg, options={}):
   :raises: ParserError
   """
   # Regex to parse tweet info out of html.
-  snark_ptn = re.compile("(?:<p>)?<a href='[^']*'>([^<]*)</a>: (.*?) +<br ?/><font size=-3><a href='[^']*'[^>]*>([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})</a></font>(?:<br ?/>|</p>)?", re.IGNORECASE)
+  snark_ptn = re.compile("(?:<p>)?<a href='([^']*)'>([^<]*)</a>: (.*?) +<br ?/><font size=-3><a href='([^']*)'[^>]*>([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})</a></font>(?:<br ?/>|</p>)?", re.IGNORECASE)
 
   # List of pattern/replacement tuples to strip reply topic from messages.
   reply_regexes = []
@@ -68,17 +73,20 @@ def fetch_snarks(src_path, first_msg, options={}):
       continue
 
     snark = {}
-    snark["user"] = result.group(1)
-    snark["msg"] =  result.group(2)
+    snark["user"] = result.group(2)
+    snark["msg"] =  result.group(3)
     for reply_ptn, reply_rep in reply_regexes:
       snark["msg"] =  reply_ptn.sub(reply_rep, snark["msg"])
     snark["msg"] =  common.asciify(common.html_unescape(snark["msg"]))
 
-    year, month, day = [int(result.group(i)) for i in [3,4,5]]
-    hour, minute, second = [int(result.group(i)) for i in [6,7,8]]
+    year, month, day = [int(result.group(i)) for i in [5,6,7]]
+    hour, minute, second = [int(result.group(i)) for i in [8,9,10]]
 
     # UTC time zone?
     snark["date"] = datetime(year, month, day, hour, minute, second)
+
+    snark["user_url"] = result.group(1)
+    snark["msg_url"] = result.group(4)
 
     if (start_date is None):
       if (first_msg is not None and line.find(first_msg) == -1):

@@ -21,7 +21,7 @@ def fetch_snarks(src_path, first_msg, options={}):
 
   This parser adds non-standard attributes to snarks:
   "user_url" and "msg_url", links to the user's twitter
-  page and to the specific tweet. Most exporters will
+  page and to the specific tweet. Exporters might
   disregard this info.
 
   Any given search may be incomplete, but this parser can
