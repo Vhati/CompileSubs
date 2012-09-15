@@ -161,35 +161,42 @@ def get_random_colors(count):
                    ("kelly-strong-purple", "803E75"),
                    #("kelly-vivid-orange", "FF6800"),
                    ("kelly-very-light-blue", "A6BDD7"),
-                   ("kelly-vivid-red", "C10020"),
+                   ##("kelly-vivid-red", "C10020"),
                    ("kelly-grayish-yellow", "CEA262"),
                    #("kelly-medium-gray", "817066"),
                    ("kelly-vivid-green", "007D34"),
                    #("kelly-strong-purplish-pink", "F6768E"),
                    ("kelly-strong-blue", "00538A"),
                    #("kelly-strong-yellowish-pink", "FF7A5C"),
-                   ("kelly-strong-violet", "53377A"),
+                   ##("kelly-strong-violet", "53377A"),
                    #("kelly-vivid-orange-yellow", "FF8E00"),
                    #("kelly-strong-purplish-red", "B32851"),
                    #("kelly-vivid-greenish-yellow", "F4C800"),
-                   ("kelly-strong-reddish-brown", "7F180D"),
+                   ##("kelly-strong-reddish-brown", "7F180D"),
                    #("kelly-vivid-yellowish-green", "93AA00"),
-                   ("kelly-deep-yellowish-brown", "593315"),
+                   ##("kelly-deep-yellowish-brown", "593315"),
                    #("kelly-reddish-orange", "F13A13"),
                    ##("kelly-dark-olive-green", "232C16"),
                    #("boynton-blue", "0000FF"),
                    #("boynton-red", "FF0000"),
-                   ("boynton-green", "00FF00"),
-                   ("boynton-yellow", "FFFF00"),
-                   ("boynton-magenta", "FF00FF"),
-                   ("boynton-pink", "FF8080"),
+                   ##("boynton-green", "00FF00"),
+                   ##("boynton-yellow", "FFFF00"),
+                   ##("boynton-magenta", "FF00FF"),
+                   ##("boynton-pink", "FF8080"),
                    ("boynton-gray", "808080"),
                    #("boynton-brown", "800000"),
-                   ("boynton-orange", "FF8000")
+                   ##("boynton-orange", "FF8000"),
+                   ("softened-pink", "CC8080"),
+                   ("softened-yellow", "FECC5A"),
+                   ##("softened-red", "C71E1E"),
+                   ("softened-magenta", "CC00CC"),
+                   ("softened-orange", "CC8000"),
+                   ("softened-green", "00CC00"),
+                   ("lighter-yellowish-brown", "795335"),
+                   ("lighter-strong-violet", "73579A")
                    ]
   random.shuffle(color_library)
-  if (count > len(color_library)):
-    color_library.extend([("white","FFFFFF")] * (count - len(color_library)))
+  color_library *= (count // len(color_library)) + 1
 
   result = [common.hex_to_rgb(y) for (x,y) in color_library[:count]]
 
