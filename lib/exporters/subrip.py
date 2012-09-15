@@ -49,16 +49,24 @@ def write_snarks(dest_file, snarks, show_time, options={}):
   for snark in snarks:
     srt_start = srt_delta_str(snark["time"])
     srt_end = srt_delta_str(snark["time"] + show_time)
-    if (include_names is True):
-      srt_msg = "%s: %s" % (snark["user"].replace("@",""), snark["msg"])
-    else:
-      srt_msg = snark["msg"]
+    srt_msg = snark["msg"]
 
     if ("color" in snark and snark["color"] is not None):
       srt_msg = color_message(srt_msg, snark["color"])
 
     # SubRip tolerates multiple lines, but not blank lines.
+    srt_msg = re.sub("\r", "", srt_msg)
     srt_msg = re.sub("\n\n+", "\n", srt_msg)
+
+    # Remove empty space and links.
+    srt_msg = re.sub("^ +", "", srt_msg)
+    srt_msg = re.sub(" *\n *", "\n", srt_msg)
+    srt_msg = srt_msg.rstrip(" \n")
+    srt_msg = re.sub(" *https?://[^ ]+", "", srt_msg)
+
+    if (include_names is True):
+      srt_msg = "%s: %s" % (snark["user"].replace("@",""), srt_msg)
+
     srt_msg = re.sub("\n", "\r\n", srt_msg)  # Reintroduce CR's.
 
     srt_index += 1
