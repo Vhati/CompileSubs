@@ -12,7 +12,7 @@ import urllib2
 from lib import common
 
 
-VERSION = "2.50"
+VERSION = "2.51"
 
 random.seed()
 
@@ -83,6 +83,9 @@ def process_snarks(config, snarks):
 
   :return: A list of processed snark dicts{user,msg,date,time,color}.
   """
+
+  # Drop ignored users.
+  snarks[:] = [s for s in snarks if s["user"] not in config.ignore_users]
 
   # Sort the msgs by their real-world date.
   snarks[:] = sorted(snarks, key=lambda k: k["date"])

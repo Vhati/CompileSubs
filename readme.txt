@@ -1,4 +1,4 @@
-CompileSubs v2.50
+CompileSubs v2.51
 
 Author:
   David Millis (tvtronix@yahoo.com)
@@ -42,6 +42,7 @@ From a terminal, run: python compilesubs.py
 
 Changes
 
+2.51 - Added ignore_users config setting.
 2.50 - Broke up the monolithic code into parser/exporter modules.
        Updated transcript_lousycanuck parser's snark_ptn regex.
        Tweaked the tweetsubs_log parser to include tweets that had expired.

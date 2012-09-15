@@ -25,15 +25,17 @@ parser_name = "tweetsubs_log"
 exporter_name = "subrip"
 
 
-# Source to parse.
+# Source to parse (url).
 #   Examples:
 #     http://freethoughtblogs.com/lousycanuck/transcript-post-name/
-#     file:///saved-post.txt (relative to filesystem root)
-#     file:saved-post.txt (relative to current dir)
+#     file:///myfile.txt (relative to filesystem root)
+#     file:myfile.txt (relative to current dir)
 #
 src_path = "file:./log_2889.txt"
 
-# Destination to write.
+# Destination to write (filesystem path).
+#   Examples: "./here.txt" or "C:/there.srt"
+#
 dest_path = "MockTM - In the Year 2889.srt"
 
 
@@ -53,6 +55,10 @@ fudge_time = timedelta(minutes=0, seconds=0)
 fudge_users = {}
 fudge_users["@brx0"] = [(timedelta(minutes=0, seconds=0), timedelta(minutes=0, seconds=0))]
 # ...
+
+# A list of users to ignore.
+#   Example: ["@Tom", "@Dick", "@Harry"]
+ignore_users = []
 
 
 # Optional in-movie time to truncate msgs (after fudging).
