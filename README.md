@@ -29,9 +29,7 @@ and Linux; no idea about OSX.
 
 * Python 2.6 or higher, but not 3.x.
     * http://www.python.org/getit/
-
 * VLC 2.x.x
     * http://www.videolan.org/vlc/
-
 * wxPython 2.8
     * http://www.wxpython.org/download.php
