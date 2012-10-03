@@ -12,7 +12,7 @@ from lib import common
 ns = "transcript_html."
 
 # Whether dest_file arg is used.
-needs_file = True
+uses_dest_file = True
 
 
 def write_snarks(dest_file, snarks, show_time, options={}):

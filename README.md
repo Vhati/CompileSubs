@@ -23,7 +23,15 @@ More parser and exporter modules can be added fairly easily.
 
 Requirements
 ------------
-Windows, Linux, or OSX.
+The commandline interface only needs Python, and should run well
+on any os. The GUI is more demanding... it will run on Windows
+and Linux; no idea about OSX.
 
 * Python 2.6 or higher, but not 3.x.
     * http://www.python.org/getit/
+
+* VLC 2.x.x
+    * http://www.videolan.org/vlc/
+
+* wxPython 2.8
+    * http://www.wxpython.org/download.php

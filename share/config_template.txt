@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from lib.common import prompt
 
-# These following are all the user-editable config vars.
 
 # Sensitive values can be prompted at runtime.
 #   xyz = prompt("user: ")
@@ -15,14 +14,14 @@ from lib.common import prompt
 #   Choices: pickled_snarks, tabbed_text, transcript_lousycanuck,
 #            tweetsubs_log, twitter_search
 #
-parser_name = "tweetsubs_log"
+parser_name = ${parser_name}
 
 # Exporter module name.
 #   See files in the "./lib/exporters/" directory for details.
 #   Choices: pickled_snarks, subrip, tabbed_text, transcript_html,
 #            transcript_wordpress
 #
-exporter_name = "subrip"
+exporter_name = ${exporter_name}
 
 
 # Source to parse (url).
@@ -31,41 +30,40 @@ exporter_name = "subrip"
 #     file:///saved-post.txt (relative to filesystem root)
 #     file:saved-post.txt (relative to current dir)
 #
-src_path = "file:../attic/log_Moontrap.txt"
+src_path = ${src_path}
 
 # Destination to write (filesystem path).
 #   Examples: "./here.txt" or "C:/there.srt"
 #
-dest_path = "./MockTM - Moontrap.srt"
+dest_path = ${dest_path}
 
 
 # Optional substring to expect of the first tweeted message.
 #   Use this to skip early msgs, or set to None.
-first_msg = "And go!"
+first_msg = ${first_msg}
 
 
 # Use this to delay all msgs (+/-).
-fudge_time = timedelta(minutes=0, seconds=-16)
+fudge_time = ${fudge_time}
 
 # Users egregiously out of sync can be additionally offset (+/-).
 # Later parts of the movie may need different fudging as users pause/buffer/etc.
 #   Each user gets a list of paired deltas: when to fudge, and how much.
 #   [(in-movie time, delay thereafter), (in-movie time, delay), ...]
 #
-fudge_users = {}
-fudge_users["@brx0"] = [(timedelta(minutes=0, seconds=0), timedelta(minutes=0, seconds=0))]
+${fudge_users_block}
 # ...
 
 # A list of users to ignore.
 #   Example: ["@Tom", "@Dick", "@Harry"]
-ignore_users = []
+ignore_users = ${ignore_users}
 
 
 # Optional in-movie time to truncate msgs (after fudging).
 #   Use this to skip late msgs, or set to None.
 #   end_time = timedelta(hours=2, minutes=0, seconds=0)
 #
-end_time = timedelta(hours=1, minutes=22, seconds=49)
+end_time = ${end_time}
 
 
 # Colored subtitles
@@ -77,21 +75,10 @@ end_time = timedelta(hours=1, minutes=22, seconds=49)
 color_enabled = "random"
 
 # Duration each msg appears on-screen.
-show_time = timedelta(seconds=6)
+show_time = ${show_time}
 
 # Parser-specific options.
-parser_options = {}
-parser_options["lousycanuck.reply_name"] = "MockTM"
-parser_options["twitter_search.reply_name"] = "MockTM"
-parser_options["twitter_search.since_date"] = datetime(2012, 9, 13)
-parser_options["twitter_search.until_date"] = datetime(2012, 9, 15)
-parser_options["twitter_search.passes"] = 1
+${parser_options_block}
 
 # Exporter-specific options.
-exporter_options = {}
-exporter_options["subrip.include_names"] = True
-exporter_options["transcript_html.faux_twitter_links"] = True
-exporter_options["transcript_wordpress.xmlrpc_url"] = "http://.../xmlrpc.php"
-exporter_options["transcript_wordpress.blog_user"] = ""
-exporter_options["transcript_wordpress.blog_pass"] = ""
-exporter_options["transcript_wordpress.post_title"] = ""
+${exporter_options_block}

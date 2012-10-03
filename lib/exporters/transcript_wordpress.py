@@ -13,7 +13,7 @@ from lib import common
 ns = "transcript_wordpress."
 
 # Whether dest_file arg is used.
-needs_file = False
+uses_dest_file = False
 
 
 def write_snarks(dest_file, snarks, show_time, options={}):

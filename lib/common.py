@@ -1,8 +1,11 @@
+import copy
+from datetime import datetime, timedelta
 import getpass
 import htmlentitydefs
 import logging
 import re
 import sys
+import weakref
 
 
 def html_unescape(text):
@@ -54,21 +57,50 @@ def asciify(utext):
   return text
 
 
+def delta_from_str(s):
+  """Constructs a timedelta from a string.
+
+  :param s: A string, as from delta_str().
+  :return: The timedelta, or None if invalid.
+  """
+  result = None
+  m = re.match("^(-?)([0-9]+):([0-9]+):([0-9]+)$", s)
+  if (m is not None):
+    sign_multiplier = (-1 if (m.groups()[0] == "-") else 1)
+    hours, minutes, seconds = [(int(s)*sign_multiplier) for s in m.groups()[1:]]
+    result = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+  return result
+
 def delta_str(delta):
   """Formats a timedelta as a string.
   A timedelta doesn't have a built-in formatter, so this
   computes hh:mm:ss (days are ignored), padded to
-  double-digits each. Negative times, which shouldn't
-  happen, are given a minus sign.
+  double-digits each. If the time is negative,
+  a minus sign is prepended to the string.
 
+  :param delta: A timedelta.
   :return: The string.
   """
-  sign = ("" if (abs(delta) == delta) else "-")  # Shouldn't be minuses!
-  hours, remainder = divmod(abs(delta).seconds, 3600)
+  total_seconds = delta_seconds(delta)
+  sign = ("" if (total_seconds >= 0) else "-")
+  hours, remainder = divmod(abs(total_seconds), 3600)
   minutes, seconds = divmod(remainder, 60)
   result = "%s%02d:%02d:%02d" % (sign, hours, minutes, seconds)
 
   return result
+
+
+def delta_seconds(delta):
+  """Returns the total seconds in a timedelta.
+  Timedeltas lacked a method for this until Python 2.7.
+
+  Negative seconds will really be negative (no more
+  normalization).
+
+  :param delta: A timedelta.
+  :return: A number.
+  """
+  return (delta.days*24*3600 + delta.seconds)
 
 
 def hex_to_rgb(hex_color):
@@ -97,7 +129,194 @@ class ExporterError(CompileSubsException):
   pass
 
 
-class Bunch:
+class SnarksEvent(object):
+  """Event to notify listeners of changes to configs and snarks lists.
+  An *_ALL flag in the constructor will cause every section flag to be
+  included.
+  """
+  FLAG_SNARKS = "FLAG_SNARKS"
+  FLAG_CONFIG_ALL = "FLAG_CONFIG_ALL"
+  FLAG_CONFIG_FUDGES = "FLAG_CONFIG_FUDGES"
+  FLAG_CONFIG_SHOW_TIME = "FLAG_CONFIG_SHOW_TIME"
+
+  RANGE_APPEND = "RANGE_APPEND"  # Not used.
+  RANGE_DELETE = "RANGE_DELETE"  # Not used.
+  RANGE_INSERT = "RANGE_INSERT"  # Not used.
+
+  _SECTION_FLAGS = ((FLAG_CONFIG_ALL, (FLAG_CONFIG_FUDGES, FLAG_CONFIG_SHOW_TIME)))
+
+  def __init__(self, flags):
+    object.__init__(self)
+    self._source = None
+    self._flags = flags
+    if (self._flags is None):
+      self._flags = []
+    elif (self._flags):
+      for section_tuple in SnarksEvent._SECTION_FLAGS:
+        if (section_tuple[0] in self._flags):
+          for f in section_tuple[1]:
+            if (f not in self._flags):
+              self._flags.append(f)
+
+  def get_source(self):
+    return self._source
+
+  def set_source(self, o):
+    self._source = o
+
+  def get_flags(self):
+    return self._flags
+
+  def clone(self):
+    """Returns a shallow copy of this event."""
+    e = SnarksEvent(self._flags[:])
+    e._source = self._source
+    return e
+
+class SnarksWrapper(object):
+  """Wraps a snarks list to provide change notifications.
+  Listeners are only weakly referenced.
+  """
+  def __init__(self, config, snarks):
+    object.__init__(self)
+    self._config_stable = config
+    self._config_unstable = None
+    self._snarks_stable = snarks
+    self._snarks_unstable = None
+    self._owner = None
+    self._listeners = []
+
+  def checkout(self, owner):
+    """Claims temporary ownership to modify wrapped objects.
+
+    :param owner: A str()-friendly object describing the new owner.
+    :raises: Exception, if checkout() was already called without a commit().
+    """
+    assert (owner is not None)
+    if (self._owner is not None):
+      raise Exception("%s was checked out again before %s has committed." % (self.__class__.__name__, str(self._owner)))
+
+    self._owner = owner
+
+  def commit(self):
+    """Allows wrapped objects to be checked out again.
+    Unstable modified versions of the objects will be
+    set as the new cloneable stable versions.
+
+    :raises: Exception, if checkout() was not called first.
+    """
+    if (self._owner is None):
+      raise Exception("%s was committed while not checked out." % (self.__class__.__name__))
+
+    if (self._config_unstable is not None):
+      self._config_stable = self._config_unstable
+      self._config_unstable = None
+    if (self._snarks_unstable is not None):
+      self._snarks_stable = self._snarks_unstable
+      self._snarks_unstable = None
+    self._owner = None
+
+  def get_config(self):
+    """Returns an unstable config that is safe to modify.
+
+    The first call after a checkout(), this will
+    be a copy of the last committed object. From
+    then on, that same copy will be returned
+    until the next commit().
+
+    :raises: Exception, if checkout() was not called first.
+    """
+    if (self._owner is None):
+      raise Exception("%s.get_config() was called while not checked out." % (self.__class__.__name__))
+
+    if (self._config_unstable is None):
+      self._config_unstable = copy.deepcopy(self._config_stable)
+    return self._config_unstable
+
+  def set_config(self, config):
+    """Replaces the unstable config.
+
+    :raises: Exception, if checkout() was not called first.
+    """
+    if (self._owner is None):
+      raise Exception("%s.set_config() was called while not checked out." % (self.__class__.__name__))
+    self._config_unstable = config
+
+  def clone_config(self):
+    """Returns a deep copy of the last stable version of the config.
+    Listeners should get new copies when notified of changes.
+    """
+    return copy.deepcopy(self._config_stable)
+
+  def get_snarks(self):
+    """Returns an unsable snarks list that is safe to modify.
+
+    The first call after a checkout(), this will
+    be a copy of the last committed object. From
+    then on, that same copy will be returned
+    until the next commit().
+
+    :raises: Exception, if checkout() was not called first.
+    """
+    if (self._owner is None):
+      raise Exception("%s.get_snarks() was called while not checked out." % (self.__class__.__name__))
+
+    if (self._snarks_unstable is None):
+      self._snarks_unstable = copy.deepcopy(self._snarks_stable)
+    return self._snarks_unstable
+
+  def set_snarks(self, snarks):
+    """Replaces the unstable snarks list.
+
+    :raises: Exception, if checkout() was not called first.
+    """
+    if (self._owner is None):
+      raise Exception("%s.set_snarks() was called while not checked out." % (self.__class__.__name__))
+    self._snarks_unstable = snarks
+
+  def clone_snarks(self):
+    """Returns a deep copy of the last stable version of the snarks list.
+    Listeners should get new copies when notified of changes.
+    """
+    return copy.deepcopy(self._snarks_stable)
+
+  def fire_snarks_event(self, e):
+    """Notifies all listeners that the snarks list has changed."""
+    e = e.clone()
+    e.set_source(self)
+
+    for ref in self._listeners:
+      l = ref()
+      if (l is not None):
+        l.on_snarks_changed(e.clone())
+      else:
+        self._listeners.remove(ref)
+
+  def add_snarks_listener(self, listener):
+    """Adds a snarks listener.
+
+    :param listener: An object with an on_snarks_changed(snarks_wrapper) method.
+    """
+    found = False
+    for ref in self._listeners:
+      l = ref()
+      if (l is listener):
+        found = True
+        break
+
+    if (found is False):
+      self._listeners.append(weakref.ref(listener))
+
+  def remove_snarks_listener(self, listener):
+    """Removes a snarks listener."""
+    for ref in self._listeners:
+      l = ref()
+      if (l is listener):
+        self._listeners.remove(ref)
+        break
+
+
+class Bunch(object):
   """A minimal object that can have attributes."""
   def __init__(self, **kwds):
     self.__dict__.update(kwds)
@@ -107,11 +326,10 @@ class Changeling(Bunch):
   instance attributes from any other object.
 
   A function attribute will only be shallow copied.
-  This does not copy class variables or class functions.
+  Class-level variables and functions will not be
+  copied.
   """
   def __init__(self, src_obj):
-    import copy
-
     attribs = [(k,v) for (k,v) in src_obj.__dict__.items() if (not k.startswith("_"))]
     for (k,v) in attribs:
       setattr(self, k, copy.deepcopy(v))
