@@ -1,4 +1,4 @@
-CompileSubs v3.00
+CompileSubs v3.50
 
 Author:
   David Millis (tvtronix@yahoo.com)
@@ -39,20 +39,19 @@ From a terminal, run: python compilesubs.py
 
 
 There's also compilesubs_gui.py, which makes it easy to
-timeshift individual users. But it doesn't have the dialogs
-yet to assign its own settings, so it reads config.py too.
-Use it to watch the video, "grab" any comment that's
-out of sync, and "place" it at the current time.
-In case of a crash, the GUI auto-saves an alternate
-config file with any changes it made.
+timeshift individual users. Use it to watch the video,
+"grab" any comment that's out of sync, and "place" it at the
+current time. In case of a crash, the GUI auto-saves an
+alternate config file with any changes it made.
 
 
-If config.py ever gets mangled somehow, there's a copy of
-the stock one in the ./share/ directory.
+If config.py ever gets mangled somehow, there's another copy
+in the ./share/ directory.
 
 
 Changes
 
+3.50 - Made configuration editable in the GUI.
 3.00 - Added a GUI for setting per-user fudges.
        Added logging.
 2.51 - Added ignore_users config setting.

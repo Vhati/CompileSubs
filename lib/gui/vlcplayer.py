@@ -19,7 +19,7 @@ import wx.grid
 from lib import common
 from lib import global_config
 from lib import snarkutils
-from lib.gui import snarkgrid
+from lib.gui import snark_ui
 from lib.gui import vlc
 
 
@@ -32,9 +32,11 @@ class PlayerFrame(wx.Frame):
 
     # Menuitems.
     self.ID_FILE_OPEN = wx.ID_OPEN
-    self.ID_FILE_SNARKS = wx.NewId()
+    self.ID_FILE_PARSE = wx.NewId()
     self.ID_FILE_EXPORT = wx.NewId()
     self.ID_FILE_EXIT = wx.ID_EXIT
+    self.ID_TOOLS_CONFIG = wx.NewId()
+    self.ID_TOOLS_SNARKS = wx.NewId()
 
     self._snarks_wrapper = snarks_wrapper
     self._config = self._snarks_wrapper.clone_config()
@@ -51,8 +53,8 @@ class PlayerFrame(wx.Frame):
     open_menuitem = file_menu.Append(self.ID_FILE_OPEN, "&Open Video...\tCtrl-O")
     self.Bind(wx.EVT_MENU, self._on_open, open_menuitem)
     file_menu.AppendSeparator()
-    self.snarks_menuitem = file_menu.Append(self.ID_FILE_SNARKS, "&Snarks...")
-    self.Bind(wx.EVT_MENU, self._on_show_snarks, self.snarks_menuitem)
+    parse_menuitem = file_menu.Append(self.ID_FILE_PARSE, "&Parse Snarks")
+    self.Bind(wx.EVT_MENU, self._on_parse, parse_menuitem)
     export_menuitem = file_menu.Append(self.ID_FILE_EXPORT, "&Export Snarks")
     self.Bind(wx.EVT_MENU, self._on_export, export_menuitem)
     file_menu.AppendSeparator()
@@ -60,11 +62,18 @@ class PlayerFrame(wx.Frame):
     self.Bind(wx.EVT_MENU, self._on_close, exit_menuitem)
     menubar.Append(file_menu, "&File")
 
+    tools_menu = wx.Menu()
+    self.config_menuitem = tools_menu.Append(self.ID_TOOLS_CONFIG, "&Configuration...")
+    self.Bind(wx.EVT_MENU, self._on_show_config, self.config_menuitem)
+    self.snarks_menuitem = tools_menu.Append(self.ID_TOOLS_SNARKS, "Edit &Snarks...")
+    self.Bind(wx.EVT_MENU, self._on_show_snarks, self.snarks_menuitem)
+    menubar.Append(tools_menu, "&Tools")
+
     self.SetMenuBar(menubar)
 
     self.statusbar = self.CreateStatusBar()
     self.statusbar.SetFieldsCount(len(self.STATUS_FIELDS))
-    self.statusbar.SetStatusWidths([-1, 60, 60, 17])  # 45
+    self.statusbar.SetStatusWidths([-1, 60, 60, 17])
     self.statusbar.SetStatusStyles([wx.SB_NORMAL]*3+[wx.SB_FLAT])
     self.SetStatusBar(self.statusbar)
     self._last_status_tip = None
@@ -150,7 +159,6 @@ class PlayerFrame(wx.Frame):
     ##self.Fit()
 
     self.Bind(wx.EVT_CLOSE, self._on_close)
-    self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
 
     # Slave the GUI to VLC's status.
     self.pulse_timer = wx.Timer(self)
@@ -160,14 +168,6 @@ class PlayerFrame(wx.Frame):
     self.new_volume = self.volslider.GetValue()  # Set volume on startup.
 
     self._snarks_wrapper.remove_snarks_listener(self)
-
-    #def hmm():
-    #  self.vlc_player.video_set_marquee_string(vlc.VideoMarqueeOption.Text, "hello")
-    #wx.CallLater(10000, hmm)
-
-    #def hmm():
-    #  wx.GetApp().invoke_later(wx.GetApp().ACTION_DIE, {})
-    #wx.CallLater(6000, hmm)
 
   def init_vlc(self):
     """Sets the window id where VLC will render video output.
@@ -281,18 +281,75 @@ class PlayerFrame(wx.Frame):
     dlg.Destroy()
     if (e is not None): e.Skip(False)  # Consume the event.
 
-  def _on_snark_frame_destroyed(self, e):
-    """Toggles the menuitem when the snarks window closes."""
-    self.snark_frame = None
-    self.snarks_menuitem.Enable(True)
-    if (e is not None): e.Skip(True)
+  def _on_show_config(self, e):
+    """Shows the config window and toggles the menuitem."""
+    self.config_menuitem.Enable(False)
+
+    def destroyed_callback(e):
+      def after_func(source=e.GetEventObject()):
+        if (self):  # After destruction, bool(self) is False.
+          self.config_menuitem.Enable(True)
+      wx.CallAfter(after_func)  # Let destruction finish.
+      if (e is not None): e.Skip(False)  # Consume the event.
+
+    wx.GetApp().invoke_later(wx.GetApp().ACTION_SHOW_CONFIG, {"parent":self, "continue_func":None, "destroyed_func":destroyed_callback})
+    if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_show_snarks(self, e):
     """Shows the Snarks window and toggles the menuitem."""
-    self.snark_frame = snarkgrid.SnarkFrame(self, wx.ID_ANY, "Snarks", self._snarks_wrapper)
+    self.snark_frame = snark_ui.SnarkFrame(self, wx.ID_ANY, "Snarks", self._snarks_wrapper)
     self.snark_frame.Show()
     self.snarks_menuitem.Enable(False)
-    self.snark_frame.Bind(wx.EVT_WINDOW_DESTROY, self._on_snark_frame_destroyed)
+
+    def destroyed_callback(e):
+      def after_func(source=e.GetEventObject()):
+        if (self):  # After destruction, bool(self) is False.
+          if (source is self.snark_frame):
+            self.snark_frame = None
+            self.snarks_menuitem.Enable(True)
+      wx.CallAfter(after_func)  # Let destruction finish.
+      if (e is not None): e.Skip(False)  # Consume the event.
+
+    self.snark_frame.Bind(wx.EVT_WINDOW_DESTROY, destroyed_callback)
+    if (e is not None): e.Skip(False)  # Consume the event.
+
+  def _on_parse(self, e):
+    try:
+      config = self._snarks_wrapper.clone_config()
+
+      logging.info("Calling %s parser..." % config.parser_name)
+      self.statusbar.SetStatusText("Calling %s parser..." % config.parser_name, self.STATUS_HELP)
+      snarks = snarkutils.parse_snarks(config)
+
+      if (len(snarks) == 0):
+        raise common.CompileSubsException("No messages were parsed.")
+
+      snarkutils.gui_preprocess_snarks(config, snarks)
+      snarkutils.gui_fudge_users(config, snarks)
+
+      if (len(snarks) == 0):
+        raise common.CompileSubsException("After preprocessing, no messages were left.")
+
+      logging.info("Parsing succeeded.")
+      self.statusbar.SetStatusText("Parsing succeeded.", self.STATUS_HELP)
+
+      self._snarks_wrapper.checkout(self.__class__.__name__)
+      self._snarks_wrapper.set_snarks(snarks)
+      self._snarks_wrapper.commit()
+
+      event = common.SnarksEvent([common.SnarksEvent.FLAG_SNARKS])
+      self._snarks_wrapper.fire_snarks_event(event)
+
+    except (common.CompileSubsException) as err:
+      # Parser failed in an uninteresting way.
+      logging.error(str(err))
+      self.statusbar.SetStatusText("Error: %s" % str(err), self.STATUS_HELP)
+
+    except (Exception) as err:
+      logging.exception(err)
+      self.statusbar.SetStatusText("Error: The parser failed in an unexpected way.", self.STATUS_HELP)
+
+    if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_export(self, e):
     try:
@@ -307,7 +364,7 @@ class PlayerFrame(wx.Frame):
       self.statusbar.SetStatusText("Calling %s exporter..." % config.exporter_name, self.STATUS_HELP)
       snarkutils.export_snarks(config, snarks)
 
-      logging.info("Done.")
+      logging.info("Export succeeded.")
       self.statusbar.SetStatusText("Export succeeded.", self.STATUS_HELP)
 
     except (common.CompileSubsException) as err:
@@ -341,9 +398,6 @@ class PlayerFrame(wx.Frame):
 
     self.Destroy()
     if (e is not None): e.Skip(False)  # Consume the event.
-
-  def _on_destroy(self, e):
-    if (e is not None): e.Skip(True)
 
   def _on_play(self, e):
     if (self.vlc_player.play() != -1):
@@ -454,8 +508,8 @@ class PlayerFrame(wx.Frame):
         self.ctrl_panel.Freeze()
         self.play_btn.Show(False)
         self.pause_btn.Show(True)
-        self.ctrl_panel.Thaw()
         self.ctrl_panel.Layout()
+        self.ctrl_panel.Thaw()
       wx.CallAfter(f)
 
     elif (e.type == vlc.EventType.MediaPlayerPaused):
@@ -464,8 +518,8 @@ class PlayerFrame(wx.Frame):
         self.ctrl_panel.Freeze()
         self.pause_btn.Show(False)
         self.play_btn.Show(True)
-        self.ctrl_panel.Thaw()
         self.ctrl_panel.Layout()
+        self.ctrl_panel.Thaw()
       wx.CallAfter(f)
 
     elif (e.type == vlc.EventType.MediaPlayerStopped):
@@ -478,8 +532,8 @@ class PlayerFrame(wx.Frame):
         self.play_btn.Show(True)
         self.pause_btn.Show(False)
         self.pause_btn.Enable(False)
-        self.ctrl_panel.Thaw()
         self.ctrl_panel.Layout()
+        self.ctrl_panel.Thaw()
         self._last_video_time = None
 
         #clock_string = "%s/%s" % (self._time_string(None), self._time_string(None))

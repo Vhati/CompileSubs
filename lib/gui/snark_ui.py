@@ -8,7 +8,7 @@ import wx.grid
 
 from lib import common
 from lib import snarkutils
-from lib.gui import fudgegrid
+from lib.gui import fudge_ui
 from lib.gui import vlc
 
 
@@ -150,6 +150,8 @@ class SnarkFrame(wx.Frame):
     """
     config_changed = False
     snarks_changed = False
+    prev_row_count = self.snark_table.GetNumberRows()
+
     if (common.SnarksEvent.FLAG_CONFIG_FUDGES in e.get_flags()):
       config_changed = True
     if (common.SnarksEvent.FLAG_SNARKS in e.get_flags()):
@@ -160,6 +162,11 @@ class SnarkFrame(wx.Frame):
     if (config_changed): self._config = self._snarks_wrapper.clone_config()
     if (snarks_changed): self._snarks = self._snarks_wrapper.clone_snarks()
     self.snark_table.set_data(self._config, self._snarks)
+
+    if (snarks_changed and prev_row_count == 0):
+      self.snark_grid.AutoSizeColumn(self.snark_table.COL_FINAL_TIME)
+      self.snark_grid.AutoSizeColumn(self.snark_table.COL_GLOBALLY_FUDGED_TIME)
+      self.snark_grid.AutoSizeColumn(self.snark_table.COL_USER_FUDGE)
 
     if (self._update_video_row() is True):
       self.snark_table.set_video_row(self._last_video_row)
@@ -275,9 +282,19 @@ class SnarkFrame(wx.Frame):
   def _on_edit_fudges(self, e):
     """Shows the fudges window."""
     self.edit_fudges_btn.Enable(False)
-    self.fudge_frame = fudgegrid.FudgeFrame(self, wx.ID_ANY, "Fudges", self._snarks_wrapper)
+    self.fudge_frame = fudge_ui.FudgeFrame(self, wx.ID_ANY, "Fudges", self._snarks_wrapper)
     self.fudge_frame.Show()
-    self.fudge_frame.Bind(wx.EVT_WINDOW_DESTROY, self._on_fudge_frame_destroyed)
+
+    def destroyed_callback(e):
+      def after_func(source=e.GetEventObject()):
+        if (self):  # After destruction, bool(self) is False.
+          if (source is self.fudge_frame):
+            self.fudge_frame = None
+            self.edit_fudges_btn.Enable(True)
+      wx.CallAfter(after_func)  # Let destruction finish.
+      if (e is not None): e.Skip(False)  # Consume the event.
+
+    self.fudge_frame.Bind(wx.EVT_WINDOW_DESTROY, destroyed_callback)
     if (e is not None): e.Skip(False)  # Consume the event.
 
   def _trigger_statusbar_clear(self, e):
@@ -345,11 +362,6 @@ class SnarkFrame(wx.Frame):
     else:
       return False
 
-  def _on_fudge_frame_destroyed(self, e):
-    self.fudge_frame = None
-    self.edit_fudges_btn.Enable(True)
-    if (e is not None): e.Skip(True)
-
   def _on_close(self, e):
     self._snarks_wrapper.remove_snarks_listener(self)
     if (self.fudge_frame is not None): self.fudge_frame.Close()
@@ -375,7 +387,7 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
     # Set right-aligned column attrs.
     for col in [self.COL_FINAL_TIME,self.COL_GLOBALLY_FUDGED_TIME,self.COL_USER_FUDGE]:
       attr = wx.grid.GridCellAttr()
-      attr.SetAlignment(wx.ALIGN_RIGHT,wx.ALIGN_CENTRE)
+      attr.SetAlignment(wx.ALIGN_RIGHT,wx.ALIGN_CENTER)
       self._col_attrs[col] = attr
     # Set default attrs on remaining columns.
     for col in range(len(cols)):

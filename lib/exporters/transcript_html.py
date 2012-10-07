@@ -5,6 +5,7 @@ import re
 import sys
 import urllib2
 
+from lib import arginfo
 from lib import common
 
 
@@ -14,6 +15,19 @@ ns = "transcript_html."
 # Whether dest_file arg is used.
 uses_dest_file = True
 
+
+def get_description():
+  return "Writes snarks as html with links to each user and message."
+
+def get_arginfo():
+  args = []
+  args.append(arginfo.Arg(name="excerpt_only", type=arginfo.BOOLEAN,
+              required=False, default=True, choices=[True,False], multiple=False,
+              description="Boolean to only generate an excerpt to paste elsewhere.\nDefault is True."))
+  args.append(arginfo.Arg(name="faux_twitter_links", type=arginfo.BOOLEAN,
+              required=False, default=False, choices=[True,False], multiple=False,
+              description="Boolean to guess twitter user links, if the parser didn't provide them.\nLinks to messages still can't be guessed and will be \"#\"\nDefault is False."))
+  return args
 
 def write_snarks(dest_file, snarks, show_time, options={}):
   """Writes snarks as html with links to each user and message.

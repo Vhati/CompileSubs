@@ -1,3 +1,3 @@
 # Global constants.
 
-VERSION = "3.00"
+VERSION = "3.50"

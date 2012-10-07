@@ -5,12 +5,23 @@ import re
 import sys
 import urllib2
 
+from lib import arginfo
 from lib import common
 
 
 # Namespace for options.
 ns = "tabbed_text."
 
+
+def get_description():
+  return "Collects snarks from tab-separated text."
+
+def get_arginfo():
+  args = []
+  args.append(arginfo.Arg(name="reply_name", type=arginfo.STRING,
+              required=False, default=None, choices=None, multiple=False,
+              description="The name to which replies were directed (no \"@\").\nRegexes will remove it from messages."))
+  return args
 
 def fetch_snarks(src_path, first_msg, options={}):
   """Collects snarks from tab-separated text.
@@ -23,7 +34,7 @@ def fetch_snarks(src_path, first_msg, options={}):
   :param first_msg: If not None, ignore messages until this substring is found.
   :param options: A dict of extra options specific to this parser.
                   reply_name (optional):
-                      The name to which replies were directed.
+                      The name to which replies were directed (no "@").
                       Regexes will remove it from messages.
   :return: A List of snark dicts.
   :raises: ParserError
@@ -78,7 +89,7 @@ def fetch_snarks(src_path, first_msg, options={}):
       snark["color"] = common.hex_to_rgb(result.group(7))
 
     if (start_date is None):
-      if (first_msg is not None and line.find(first_msg) == -1):
+      if (first_msg and line.find(first_msg) == -1):
         # This snark was earlier than the expected first msg.
         continue
       start_date = snark["date"]

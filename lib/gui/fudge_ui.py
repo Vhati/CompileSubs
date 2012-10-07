@@ -109,7 +109,7 @@ class FudgeFrame(wx.Frame):
     self._pane_sizer.Add(grid_panel, 1, flag=wx.EXPAND)
     self._pane_sizer.Add(ctrl_panel, flag=wx.EXPAND|wx.BOTTOM|wx.TOP, border=0)
 
-    sep_line = wx.StaticLine(self._pane, wx.ID_ANY)
+    sep_line = wx.StaticLine(self._pane, wx.ID_ANY, style=wx.LI_HORIZONTAL)
     self._pane_sizer.Add(sep_line, flag=wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.BOTTOM|wx.TOP, border=15)
 
     self._pane_sizer.Add(self._edit_panel)
@@ -157,9 +157,15 @@ class FudgeFrame(wx.Frame):
     if (common.SnarksEvent.FLAG_CONFIG_FUDGES not in e.get_flags()):
       return
 
+    prev_row_count = self.fudge_table.GetNumberRows()
+
     if (self._edited_row is not None): self._on_edit_cancel(None)
     self._config = self._snarks_wrapper.clone_config()
     self.fudge_table.set_data(self._config)
+
+    if (prev_row_count == 0):
+      self.fudge_grid.AutoSizeColumn(self.fudge_table.COL_GLOBALLY_FUDGED_TIME)
+      self.fudge_grid.AutoSizeColumn(self.fudge_table.COL_USER_FUDGE)
 
   def _trigger_statusbar_clear(self, e):
     self.statusbar.SetStatusText("", self.STATUS_HELP)
@@ -245,10 +251,13 @@ class FudgeFrame(wx.Frame):
 
     user, bookmark, fudge_amount = None, None, None
 
-    user = self._edit_user_field.GetValue()
-    if (len(user) == 0 or user == "@"): user = None
-    bookmark = common.delta_from_str(self._edit_bookmark_field.GetValue())
-    fudge_amount = common.delta_from_str(self._edit_fudge_field.GetValue())
+    try:
+      user = self._edit_user_field.GetValue()
+      if (len(user) == 0 or user == "@"): user = None
+      bookmark = common.delta_from_str(self._edit_bookmark_field.GetValue())
+      fudge_amount = common.delta_from_str(self._edit_fudge_field.GetValue())
+    except (ValueError) as err:
+      pass
 
     proceed = True
     for x,noun in [(user, "user"), (bookmark, "time"), (fudge_amount, "fudge amount")]:
@@ -258,6 +267,8 @@ class FudgeFrame(wx.Frame):
         break
 
     if (proceed is True):
+      prev_row_count = self.fudge_table.GetNumberRows()
+
       self._snarks_wrapper.checkout(self.__class__.__name__)
       config = self._snarks_wrapper.get_config()
       if (self._edited_row != -1):
@@ -274,6 +285,10 @@ class FudgeFrame(wx.Frame):
       self._snarks_wrapper.fire_snarks_event(new_event)
 
       self._on_edit_cancel(None)
+
+      if (prev_row_count == 0):
+        self.fudge_grid.AutoSizeColumn(self.fudge_table.COL_GLOBALLY_FUDGED_TIME)
+        self.fudge_grid.AutoSizeColumn(self.fudge_table.COL_USER_FUDGE)
 
     if (e is not None): e.Skip(False)  # Consume the event.
 
@@ -300,7 +315,7 @@ class FudgeGridTable(wx.grid.PyGridTableBase):
     for col in [self.COL_GLOBALLY_FUDGED_TIME,self.COL_USER_FUDGE]:
       attr = wx.grid.GridCellAttr()
       attr.SetReadOnly(True)
-      attr.SetAlignment(wx.ALIGN_RIGHT,wx.ALIGN_CENTRE)
+      attr.SetAlignment(wx.ALIGN_RIGHT,wx.ALIGN_CENTER)
       self._col_attrs[col] = attr
     # Set default attrs on remaining columns.
     for col in range(len(cols)):

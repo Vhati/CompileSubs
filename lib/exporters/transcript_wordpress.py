@@ -6,7 +6,9 @@ import StringIO
 import sys
 import xmlrpclib
 
+from lib import arginfo
 from lib import common
+from lib import snarkutils
 
 
 # Namespace for options.
@@ -15,6 +17,40 @@ ns = "transcript_wordpress."
 # Whether dest_file arg is used.
 uses_dest_file = False
 
+
+def get_description():
+  return "Writes snarks to a new Wordpress blog post."
+
+def get_arginfo():
+  args = []
+  args.append(arginfo.Arg(name="xmlrpc_url", type=arginfo.URL,
+              required=True, default=None, choices=None, multiple=False,
+              description="Full url to \"http://.../xmlrpc.php\"."))
+  args.append(arginfo.Arg(name="blog_id", type=arginfo.INTEGER,
+              required=False, default=0, choices=None, multiple=False,
+              description="Usually ignored by Wordpress servers.\nDefault is 0."))
+  args.append(arginfo.Arg(name="blog_user", type=arginfo.STRING,
+              required=True, default=None, choices=None, multiple=False,
+              description="Wordpress username."))
+  args.append(arginfo.Arg(name="blog_pass", type=arginfo.HIDDEN_STRING,
+              required=True, default=None, choices=None, multiple=False,
+              description="Wordpress password."))
+  args.append(arginfo.Arg(name="post_title", type=arginfo.STRING,
+              required=True, default=None, choices=None, multiple=False,
+              description="Title of the new post."))
+  args.append(arginfo.Arg(name="post_categories", type=arginfo.STRING,
+              required=False, default=None, choices=None, multiple=True,
+              description="List of the post's category names.\n(They must exist on the server)"))
+  args.append(arginfo.Arg(name="post_keywords", type=arginfo.STRING,
+              required=False, default=None, choices=None, multiple=True,
+              description="List of keyword tags."))
+  args.append(arginfo.Arg(name="post_publish", type=arginfo.INTEGER,
+              required=False, default=0, choices=[0,1], multiple=False,
+              description="1=Publish. 0=Draft.\nDefault is 0."))
+  args.append(arginfo.Arg(name="post_body_exporter", type=arginfo.STRING,
+              required=False, default="transcript_html", choices=snarkutils.list_exporters(), multiple=False,
+              description="An html excerpt exporter.\nSpecify its own options as normal.\nDefault is \"transcript_html\"."))
+  return args
 
 def write_snarks(dest_file, snarks, show_time, options={}):
   """Writes snarks to a new Wordpress blog post.
@@ -34,7 +70,8 @@ def write_snarks(dest_file, snarks, show_time, options={}):
                   xmlrpc_url:
                       Full url to "http://.../xmlrpc.php".
                   blog_id (optional):
-                      Usually ignored by Wordpress servers. Default is 0.
+                      Usually ignored by Wordpress servers.
+                      Default is 0.
                   blog_user:
                       Wordpress username.
                   blog_pass:
@@ -42,14 +79,15 @@ def write_snarks(dest_file, snarks, show_time, options={}):
                   post_title:
                       Title of the new post.
                   post_categories (optional):
-                      List of the post's category names (they must exist).
+                      List of the post's category names.
+                      (They must exist on the server).
                   post_keywords (optional):
                       List of keyword tags.
                   post_publish (optional):
                       1=Publish. 0=Draft. Default is 0.
                   post_body_exporter (optional):
-                      An html excerpt exporter. Specify its options in
-                      the config file as normal. Default is
+                      An html excerpt exporter. Specify its
+                      own options as normal. Default is
                       "transcript_html".
   :raises: ExporterError, xmlrpclib.Fault, xmlrpclib.ProtocolError
   """
@@ -77,7 +115,9 @@ def write_snarks(dest_file, snarks, show_time, options={}):
   body_exporter_name = "transcript_html"
   if (ns+"post_body_exporter" in options and options[ns+"post_body_exporter"]):
     body_exporter_name = options[ns+"post_body_exporter"]
-
+  if (body_exporter_name == __name__):
+    logging.error("The \"post_body_exporter\" option cannot be \"%s\"." % __name__)
+    raise common.ExporterError("Exporter failed.")
 
   exporters_pkg = __import__("lib.exporters", globals(), locals(), [body_exporter_name])
   exporter_mod = getattr(exporters_pkg, body_exporter_name)

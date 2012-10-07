@@ -7,6 +7,7 @@ import sys
 import time
 import urllib2
 
+from lib import arginfo
 from lib import common
 
 
@@ -14,9 +15,29 @@ from lib import common
 ns = "twitter_search."
 
 
+def get_description():
+  return ("Collects snarks from a Twitter search.\n"+
+          "Finds tweets from an account and any @reply mentions of it.")
+
+def get_arginfo():
+  args = []
+  args.append(arginfo.Arg(name="reply_name", type=arginfo.STRING,
+              required=True, default=None, choices=None, multiple=False,
+              description="The name to which replies were directed (no \"@\")."))
+  args.append(arginfo.Arg(name="since_date", type=arginfo.DATETIME,
+              required=False, default=None, choices=None, multiple=False,
+              description="UTC date to limit dredging up old tweets."))
+  args.append(arginfo.Arg(name="until_date", type=arginfo.DATETIME,
+              required=False, default=None, choices=None, multiple=False,
+              description="UTC date to limit dredging up new tweets."))
+  args.append(arginfo.Arg(name="passes", type=arginfo.INTEGER,
+              required=False, default=1, choices=None, multiple=False,
+              description="Search X times to fill omissions in results."))
+  return args
+
 def fetch_snarks(src_path, first_msg, options={}):
-  """Collects snarks from searching Twitter for an
-  account's tweets and any @reply mentions of it.
+  """Collects snarks from a Twitter search. Finds
+  tweets from an account and any @reply mentions of it.
   See: https://dev.twitter.com/docs/api/1/get/search
 
   This parser adds non-standard attributes to snarks:
@@ -36,7 +57,7 @@ def fetch_snarks(src_path, first_msg, options={}):
   :param first_msg: If not None, ignore messages prior to one containing this substring.
   :param options: A dict of extra options specific to this parser.
                   reply_name:
-                      The name to which replies were directed.
+                      The name to which replies were directed (no "@").
                   since_date (optional):
                       UTC Datetime to limit dredging up old tweets.
                   until_date (optional):
@@ -133,7 +154,7 @@ def fetch_snarks(src_path, first_msg, options={}):
 
   logging.info("Search complete: %d combined results." % len(snarks))
 
-  if (first_msg is not None):
+  if (first_msg):
     first_index = -1
     for i in range(len(snarks)):
       if (snarks[i]["msg"].find(first_msg) != -1):

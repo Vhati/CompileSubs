@@ -5,12 +5,20 @@ import re
 import sys
 import urlparse
 
+from lib import arginfo
 from lib import common
 
 
 # Namespace for options.
 ns = "pickled_snarks."
 
+
+def get_description():
+  return "Collects snarks from a pickle file."
+
+def get_arginfo():
+  args = []
+  return args
 
 def fetch_snarks(src_path, first_msg, options={}):
   """Collects snarks from a pickle file.
@@ -45,7 +53,7 @@ def fetch_snarks(src_path, first_msg, options={}):
 
   for snark in pickled_snarks:
     if (start_date is None):
-      if (first_msg is not None and snark["msg"].find(first_msg) == -1):
+      if (first_msg and snark["msg"].find(first_msg) == -1):
         # This snark was earlier than the expected first msg.
         continue
       start_date = snark["date"]

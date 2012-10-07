@@ -5,12 +5,20 @@ import re
 import sys
 import urllib2
 
+from lib import arginfo
 from lib import common
 
 
 # Namespace for options.
 ns = "tweetsubs_log."
 
+
+def get_description():
+  return "Collects snarks from a TweetSubs log.\nSee: https://github.com/Vhati/TweetSubs"
+
+def get_arginfo():
+  args = []
+  return args
 
 def fetch_snarks(src_path, first_msg, options={}):
   """Collects snarks from a TweetSubs log.
@@ -68,7 +76,7 @@ def fetch_snarks(src_path, first_msg, options={}):
     snark["date"] = snark["date"] - timedelta(seconds=lag_seconds)
 
     if (start_date is None):
-      if (first_msg is not None and line.find(first_msg) == -1):
+      if (first_msg and line.find(first_msg) == -1):
         # This snark was earlier than the expected first msg.
         continue
       start_date = snark["date"]

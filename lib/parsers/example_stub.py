@@ -5,12 +5,20 @@ import re
 import sys
 import urllib2
 
+from lib import arginfo
 from lib import common
 
 
 # Namespace for options.
 ns = "stub."
 
+
+def get_description():
+  return "Collects snarks from somewhere."
+
+def get_arginfo():
+  args = []
+  return args
 
 def fetch_snarks(src_path, first_msg, options={}):
   """Collects snarks from somewhere.

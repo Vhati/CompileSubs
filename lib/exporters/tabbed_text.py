@@ -3,6 +3,7 @@ import logging
 import re
 import sys
 
+from lib import arginfo
 from lib import common
 
 
@@ -12,6 +13,13 @@ ns = "tabbed_text."
 # Whether dest_file arg is used.
 uses_dest_file = True
 
+
+def get_description():
+  return "Writes snarks as tab-separated text."
+
+def get_arginfo():
+  args = []
+  return args
 
 def write_snarks(dest_file, snarks, show_time, options={}):
   """Writes snarks as tab-separated text.

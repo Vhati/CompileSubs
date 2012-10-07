@@ -28,6 +28,7 @@ exporter_name = "subrip"
 # Source to parse (url).
 #   Examples:
 #     http://freethoughtblogs.com/lousycanuck/transcript-post-name/
+#     file:///c:/saved-post.txt
 #     file:///saved-post.txt (relative to filesystem root)
 #     file:saved-post.txt (relative to current dir)
 #
@@ -41,11 +42,11 @@ dest_path = "./MockTM - Moontrap.srt"
 
 # Optional substring to expect of the first tweeted message.
 #   Use this to skip early msgs, or set to None.
-first_msg = "And go!"
+first_msg = None
 
 
 # Use this to delay all msgs (+/-).
-fudge_time = timedelta(minutes=0, seconds=-16)
+fudge_time = timedelta(minutes=0, seconds=0)
 
 # Users egregiously out of sync can be additionally offset (+/-).
 # Later parts of the movie may need different fudging as users pause/buffer/etc.

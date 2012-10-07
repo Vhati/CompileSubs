@@ -5,12 +5,23 @@ import re
 import sys
 import urllib2
 
+from lib import arginfo
 from lib import common
 
 
 # Namespace for options.
 ns = "lousycanuck."
 
+
+def get_description():
+  return "Collects snarks from an html Transcript post on LousyCanuck's blog."
+
+def get_arginfo():
+  args = []
+  args.append(arginfo.Arg(name="reply_name", type=arginfo.STRING,
+              required=False, default=None, choices=None, multiple=False,
+              description="The name to which replies were directed (no \"@\").\nRegexes will remove it from messages."))
+  return args
 
 def fetch_snarks(src_path, first_msg, options={}):
   """Collects snarks from an html Transcript post on LousyCanuck's blog.
@@ -89,7 +100,7 @@ def fetch_snarks(src_path, first_msg, options={}):
     snark["msg_url"] = result.group(4)
 
     if (start_date is None):
-      if (first_msg is not None and line.find(first_msg) == -1):
+      if (first_msg and line.find(first_msg) == -1):
         # This snark was earlier than the expected first msg.
         continue
       start_date = snark["date"]

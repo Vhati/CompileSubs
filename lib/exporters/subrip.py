@@ -3,6 +3,7 @@ import logging
 import re
 import sys
 
+from lib import arginfo
 from lib import common
 
 
@@ -13,6 +14,16 @@ ns = "subrip."
 uses_dest_file = True
 
 
+def get_description():
+  return "Writes snarks as SubRip subtitles."
+
+def get_arginfo():
+  args = []
+  args.append(arginfo.Arg(name="include_names", type=arginfo.BOOLEAN,
+              required=False, default=True, choices=[True,False], multiple=False,
+              description="Boolean to prepend each snark msg with user.\nDefault is True."))
+  return args
+
 def write_snarks(dest_file, snarks, show_time, options={}):
   """Writes snarks as SubRip subtitles.
 
@@ -21,7 +32,7 @@ def write_snarks(dest_file, snarks, show_time, options={}):
   :param show_time: Timedelta duration each msg appears on-screen.
   :param options: A dict of extra options specific to this exporter.
                   include_names (optional):
-                      Boolean to prepend snark each msg with user.
+                      Boolean to prepend each snark msg with user.
                       Default is True.
   """
   include_names = True

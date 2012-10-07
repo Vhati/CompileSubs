@@ -39,22 +39,12 @@ def main_gui():
     sys.dont_write_bytecode = False
     config = common.Changeling(config)  # A copy w/o module baggage.
 
-    logging.info("Calling %s parser..." % config.parser_name)
-    snarks = snarkutils.parse_snarks(config)
-    if (len(snarks) == 0):
-      raise common.CompileSubsException("No messages were parsed.")
-
-    snarkutils.gui_preprocess_snarks(config, snarks)
-    snarkutils.gui_fudge_users(config, snarks)
-
-    if (len(snarks) == 0):
-      raise common.CompileSubsException("After preprocessing, no messages were left.")
-
+    snarks = []
     snarks_wrapper = common.SnarksWrapper(config, snarks)
 
     fudge_saver = common.Bunch()
     def on_snarks_changed(e):
-      if (common.SnarksEvent.FLAG_CONFIG_FUDGES not in e.get_flags()):
+      if (common.SnarksEvent.FLAG_CONFIG_ANY not in e.get_flags()):
         return
 
       repr_str = snarkutils.config_repr(e.get_source().clone_config())
@@ -74,10 +64,6 @@ def main_gui():
       mygui.MainLoop()
     finally:
       mygui.done = True
-
-  except (common.CompileSubsException) as err:
-    # Parser or Exporter failed in an uninteresting way.
-    logging.error(str(err))
 
   except (Exception) as err:
     logging.exception(err)

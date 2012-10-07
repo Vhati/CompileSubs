@@ -69,6 +69,8 @@ def delta_from_str(s):
     sign_multiplier = (-1 if (m.groups()[0] == "-") else 1)
     hours, minutes, seconds = [(int(s)*sign_multiplier) for s in m.groups()[1:]]
     result = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+  else:
+    raise ValueError("Invalid timedelta string: \"%s\" should be \"(-?)00:00:00\"." % s)
   return result
 
 def delta_str(delta):
@@ -133,17 +135,23 @@ class SnarksEvent(object):
   """Event to notify listeners of changes to configs and snarks lists.
   An *_ALL flag in the constructor will cause every section flag to be
   included.
+  An *_ANY flag will be included when a section flag is present.
   """
   FLAG_SNARKS = "FLAG_SNARKS"
+  FLAG_CONFIG_ANY = "FLAG_CONFIG_ANY"
   FLAG_CONFIG_ALL = "FLAG_CONFIG_ALL"
   FLAG_CONFIG_FUDGES = "FLAG_CONFIG_FUDGES"
   FLAG_CONFIG_SHOW_TIME = "FLAG_CONFIG_SHOW_TIME"
+  FLAG_CONFIG_PARSERS = "FLAG_CONFIG_PARSERS"
+  FLAG_CONFIG_EXPORTERS = "FLAG_CONFIG_EXPORTERS"
 
   RANGE_APPEND = "RANGE_APPEND"  # Not used.
   RANGE_DELETE = "RANGE_DELETE"  # Not used.
   RANGE_INSERT = "RANGE_INSERT"  # Not used.
 
-  _SECTION_FLAGS = ((FLAG_CONFIG_ALL, (FLAG_CONFIG_FUDGES, FLAG_CONFIG_SHOW_TIME)))
+  _SECTION_FLAGS = [[FLAG_CONFIG_ALL, FLAG_CONFIG_ANY,
+                      [FLAG_CONFIG_FUDGES, FLAG_CONFIG_SHOW_TIME,
+                       FLAG_CONFIG_PARSERS, FLAG_CONFIG_EXPORTERS]]]
 
   def __init__(self, flags):
     object.__init__(self)
@@ -152,11 +160,19 @@ class SnarksEvent(object):
     if (self._flags is None):
       self._flags = []
     elif (self._flags):
-      for section_tuple in SnarksEvent._SECTION_FLAGS:
-        if (section_tuple[0] in self._flags):
-          for f in section_tuple[1]:
+      # Expand *_ALL flags.
+      for section_list in SnarksEvent._SECTION_FLAGS:
+        if (section_list[0] in self._flags):
+          for f in section_list[2]:
             if (f not in self._flags):
-              self._flags.append(f)
+              self._flags.append(f)  # Add section flag.
+      # Add *_ANY flags.
+      for section_list in SnarksEvent._SECTION_FLAGS:
+        for f in section_list[2]:
+          if (f in self._flags):
+            if (section_list[1] not in self._flags):
+              self._flags.append(section_list[1])  # Add *_ANY.
+              break
 
   def get_source(self):
     return self._source

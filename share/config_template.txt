@@ -27,6 +27,7 @@ exporter_name = ${exporter_name}
 # Source to parse (url).
 #   Examples:
 #     http://freethoughtblogs.com/lousycanuck/transcript-post-name/
+#     file:///c:/saved-post.txt
 #     file:///saved-post.txt (relative to filesystem root)
 #     file:saved-post.txt (relative to current dir)
 #
@@ -72,7 +73,7 @@ end_time = ${end_time}
 #     random: assign colors to users randomly.
 #     default: let the parser decide.
 #   At low resolutions, colored text can be ugly in VLC.
-color_enabled = "random"
+color_enabled = ${color_enabled}
 
 # Duration each msg appears on-screen.
 show_time = ${show_time}
