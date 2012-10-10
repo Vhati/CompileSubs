@@ -21,8 +21,8 @@ required_subsystems = ["tweepy_backend"]
 
 def get_description():
   return ("Collects snarks from your Twitter screen name and @mentions.\n"+
-          "This is much more reliable than a plain search,\n"+
-          "but it only works for your own Twitter account.\n"+
+          "This is much more reliable than a plain search, "+
+          "but it only works for your own account.\n"+
           "On first use, it will prompt for authorization.")
 
 def get_arginfo():
@@ -38,7 +38,7 @@ def get_arginfo():
 def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_func=None):
   """Collects snarks from your Twitter screen name and @mentions.
   This is much more reliable than a plain search, but it only
-  works for your own Twitter account.
+  works for your own account.
 
   This parser adds non-standard attributes to snarks:
   "user_url" and "msg_url", links to the user's twitter
@@ -102,7 +102,6 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
         results = tweepy_func(**tweepy_func_args)
         api_hp -= 1
         if (not results):
-          print "No more results"
           done = True
           break
         else:
@@ -124,7 +123,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
 
             snark["date"] = status.created_at
 
-            snark["user_url"] = "http://www.twitter.com/%s" % status.author.screen_name
+            snark["user_url"] = "http://www.twitter.com/%s" % common.asciify(status.author.screen_name)
             snark["msg_url"] = "http://twitter.com/#!/%s/status/%d" % (common.asciify(status.author.screen_name), status.id)
 
             if (until_date and snark["date"] > until_date):

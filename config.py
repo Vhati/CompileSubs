@@ -86,7 +86,6 @@ parser_options["lousycanuck.reply_name"] = "MockTM"
 parser_options["twitter_search.reply_name"] = "MockTM"
 parser_options["twitter_search.since_date"] = datetime(2012, 9, 13)
 parser_options["twitter_search.until_date"] = datetime(2012, 9, 15)
-parser_options["twitter_search.passes"] = 1
 
 # Exporter-specific options.
 exporter_options = {}

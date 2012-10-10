@@ -53,6 +53,7 @@ Changes
 
 3.52 - Made global fudge_time and ignore_users adjustable w/o reparsing.
        Fixed glitchy volume control.
+       Made twitter_search parser use the Tweepy subsystem.
        Changed 'message'/'msg' to 'comment' in descriptions.
 3.51 - Added twitter_mentions parser.
        Added threading for parsers and exporters.
