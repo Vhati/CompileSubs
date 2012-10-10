@@ -188,50 +188,59 @@ def parse_snarks(config, keep_alive_func=None, sleep_func=None):
 def gui_preprocess_snarks(config, snarks):
   """Performs initial processing of recently parsed snarks.
 
-  Any snark that's from an ignored user will be removed.
   No early/late pruning takes place. The result will be
   suitable for gui_fudge_users().
 
-  A "globally fudged time" key will be added, representing
+  A "_globally fudged time" key will be added, representing
   an in-movie offset from the first snark's "date", plus
   any global fudging, but NOT user fudging. A "time" key
   is also added with a similar value, but that may be
   subject to user fudging later.
 
+  A boolean "_ignored" key will be added: True for any
+  snark that's from an ignored user, False otherwise.
+
   No "color" is added.
 
-  This will modify the list in-place.
+  This will modify the snarks list in-place.
   """
-  # Drop ignored users.
-  snarks[:] = [s for s in snarks if s["user"] not in config.ignore_users]
-
   # Sort the msgs by their real-world date.
   snarks[:] = sorted(snarks, key=lambda k: k["date"])
 
   # Add in-movie time info to them.
   for snark in snarks:
-    snark["globally fudged time"] = snark["date"] - snarks[0]["date"] + config.fudge_time
+    snark["_globally fudged time"] = snark["date"] - snarks[0]["date"] + config.fudge_time
     snark["time"] = snark["date"] - snarks[0]["date"] + config.fudge_time
 
   # Sort the msgs by their in-movie time.
   snarks[:] = sorted(snarks, key=lambda k: k["time"])
 
+  # Ignore users.
+  for snark in snarks:
+    if (snark["user"] in config.ignore_users):
+      snark["_ignored"] = True
+    else:
+      snark["_ignored"] = False
+
 
 def gui_fudge_users(config, snarks):
   """Sets snarks' "time", including global and user fudging.
 
-  If the "globally fudged time" key is present,
-  some math will be bypassed. Otherwise, "time" will
-  be recomputed using the offset since the first
-  snark's "date".
+  If the "_globally fudged time" key is present,
+  some math will be bypassed. Otherwise, it will
+  be created using the offset since the first
+  snark's "date" and the config's global fudge.
 
-  This will modify the list in-place.
+  That value will then be added to the config's
+  per-user fudges to set "time".
+
+  This will modify the snarks list in-place.
   """
   for snark in snarks:
-    if ("globally fudged time" in snark):
-      snark["time"] = snark["globally fudged time"]
-    else:
-      snark["time"] = snark["date"] - snarks[0]["date"] + config.fudge_time
+    # Revert each snark's time to its globally fudged time.
+    if ("_globally fudged time" not in snark):
+      snark["_globally fudged time"] = snark["date"] - snarks[0]["date"] + config.fudge_time
+    snark["time"] = snark["_globally fudged time"]
 
     # Search backward through a user's delays for one in the recent past.
     if (snark["user"] in config.fudge_users):
@@ -247,13 +256,19 @@ def gui_fudge_users(config, snarks):
 def gui_postprocess_snarks(config, snarks):
   """Performs remaining processing of snarks.
   Any snark that's early or late will be removed.
+  Any snark with an "_ignored" key that's True
+  will be removed.
+
   The result will be suitable for export_snarks().
 
   If enabled in config, a "color" key is added,
   an RGB float tuple (0.0-1.0), assigned randomly.
 
-  This will modify the list in-place.
+  This will modify the snarks list in-place.
   """
+  # Omit ignored snarks.
+  snarks[:] = [s for s in snarks if ("_ignored" in s and s["_ignored"])]
+
   # Omit snarks that got shifted into negative times.
   snarks[:] = [x for x in snarks if (abs(x["time"]) == x["time"])]
 
@@ -290,11 +305,8 @@ def process_snarks(config, snarks):
   If enabled in config, "color" is added, an RGB float tuple
   (0.0-1.0), assigned randomly.
 
-  This will modify the list in-place.
+  This will modify the snarks list in-place.
   """
-  # Drop ignored users.
-  snarks[:] = [s for s in snarks if s["user"] not in config.ignore_users]
-
   # Sort the msgs by their real-world date.
   snarks[:] = sorted(snarks, key=lambda k: k["date"])
 
@@ -308,6 +320,9 @@ def process_snarks(config, snarks):
         if (snark["time"] >= bookmark):
           snark["time"] += fudge_value
           break
+
+  # Omit snarks from ignored users.
+  snarks[:] = [s for s in snarks if (s["user"] not in config.ignore_users)]
 
   # Omit snarks that got shifted into negative times.
   snarks[:] = [x for x in snarks if (abs(x["time"]) == x["time"])]

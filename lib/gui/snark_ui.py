@@ -251,8 +251,8 @@ class SnarkFrame(wx.Frame):
       grabbed_snark = self._grabbed_snark
       self._grabbed_snark = None
       current_time = timedelta(seconds=(vlc_milliseconds//1000))
-      fudge_delta = current_time - grabbed_snark["globally fudged time"]
-      fudge_tuple = (grabbed_snark["globally fudged time"], fudge_delta)
+      fudge_delta = current_time - grabbed_snark["_globally fudged time"]
+      fudge_tuple = (grabbed_snark["_globally fudged time"], fudge_delta)
 
       self._snarks_wrapper.checkout(self.__class__.__name__)
       snarkutils.config_add_user_fudge(self._snarks_wrapper.get_config(), grabbed_snark["user"], fudge_tuple)
@@ -312,7 +312,11 @@ class SnarkFrame(wx.Frame):
     if (e is not None): e.Skip(True)
 
   def set_video_time(self, milliseconds):
-    """Notifies this widget that the video time has changed."""
+    """Notifies this widget that the video time has changed.
+
+    All snarks within the config's show_time will be shown,
+    excluding any that are ignored.
+    """
     seconds = milliseconds // 1000
     if (self._last_video_time is None or seconds != self._last_video_time):
       self._last_video_time = seconds
@@ -328,6 +332,7 @@ class SnarkFrame(wx.Frame):
           for i in range(self._last_video_row, -1, -1):
             snark = self._snarks[i]
             if (snark["time"] != last_video_snark["time"]): break
+            if ("_ignored" in snark and snark["_ignored"]): continue
             msgs.insert(0, "%s: %s" % (snark["user"], snark["msg"]))
           msg = "\n".join(msgs)
           if (len(msg) > 0):
@@ -423,12 +428,12 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
     elif (col == self.COL_MSG):
       return snark["msg"]
     elif (col == self.COL_GLOBALLY_FUDGED_TIME):
-      return common.delta_str(snark["globally fudged time"])
+      return common.delta_str(snark["_globally fudged time"])
     elif (col == self.COL_USER_FUDGE):
       # Search backward through a user's delays for one in the recent past.
       if (snark["user"] in self._config.fudge_users):
         for (bookmark, fudge_value) in reversed(self._config.fudge_users[snark["user"]]):
-          if (snark["globally fudged time"] >= bookmark):
+          if (snark["_globally fudged time"] >= bookmark):
             return common.delta_str(fudge_value)
         return common.delta_str(timedelta(0))
       else:
@@ -449,11 +454,18 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
     else:
       attr = wx.grid.GridCellAttr()
 
+    snark = self._snarks[row]
     if (self._last_video_row is not None and row == self._last_video_row):
       # Highlight the most recent snark according to video time.
       new_attr = attr.Clone()
       attr.DecRef()
-      new_attr.SetBackgroundColour(wx.Colour(220, 220, 220, 255))
+      new_attr.SetBackgroundColour(wx.Colour(255, 210, 205, 255))
+      attr = new_attr
+
+    elif ("_ignored" in snark and snark["_ignored"]):
+      new_attr = attr.Clone()
+      attr.DecRef()
+      new_attr.SetTextColour(wx.Colour(155, 155, 155, 255))
       attr = new_attr
 
     return attr

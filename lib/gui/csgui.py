@@ -104,12 +104,63 @@ class GuiApp(wx.App):
     """
     def config_subsection_callback(values_dict):
       self._snarks_wrapper.checkout(self.__class__.__name__)
+      old_config = self._snarks_wrapper.clone_config()
+
       config = self._snarks_wrapper.get_config()
+      snarks = self._snarks_wrapper.get_snarks()
       for (k,v) in values_dict.items():
         setattr(config, k, v)
+
+      # Determine what changed, assuming everything, at first.
+      event_flags = []
+      for section_list in common.SnarksEvent.SECTION_FLAGS:
+        if (section_list[0] == common.SnarksEvent.FLAG_CONFIG_ALL):
+          for f in section_list[2]:
+            if (f not in event_flags):
+              event_flags.append(f)  # Add section flag.
+        break
+
+      def toggle_flag(event_flags, flag, expression):
+        # Sets a flag if expression is True, unsets otherwise.
+        if (expression):
+          if (flag not in event_flags): event_flags.append(flag)
+        else:
+          if (flag in event_flags): event_flags.remove(flag)
+
+      if (config.ignore_users != old_config.ignore_users):
+        # Unignore the old list, Ignore the new list.
+        for snark in snarks:
+          if (snark["user"] in config.ignore_users):
+            snark["_ignored"] = True
+          elif (snark["user"] in old_config.ignore_users):
+            snark["_ignored"] = False
+        toggle_flag(event_flags, common.SnarksEvent.FLAG_SNARKS, True)
+
+      if (config.fudge_time != old_config.fudge_time):
+        diff = config.fudge_time - old_config.fudge_time
+        for user in config.fudge_users:
+          fudge_list = config.fudge_users[user]
+          fudge_list[:] = [(ft[0]+diff, ft[1]) for ft in fudge_list]
+        toggle_flag(event_flags, common.SnarksEvent.FLAG_CONFIG_FUDGES, True)
+
+        # Strip cached globally fudged time.
+        for snark in snarks:
+          snark.pop("_globally fudged time", None)
+        snarkutils.gui_fudge_users(config, snarks)
+        toggle_flag(event_flags, common.SnarksEvent.FLAG_SNARKS, True)
+
+      toggle_flag(event_flags, common.SnarksEvent.FLAG_CONFIG_SHOW_TIME,
+                  (config.show_time != old_config.show_time))
+
+      toggle_flag(event_flags, common.SnarksEvent.FLAG_CONFIG_PARSERS,
+                  (config.parser_name != old_config.parser_name))
+
+      toggle_flag(event_flags, common.SnarksEvent.FLAG_CONFIG_EXPORTERS,
+                  (config.exporter_name != old_config.exporter_name))
+
       self._snarks_wrapper.commit()
 
-      event = common.SnarksEvent([common.SnarksEvent.FLAG_CONFIG_ALL])
+      event = common.SnarksEvent(event_flags)
       self._snarks_wrapper.fire_snarks_event(event)
 
     config = csconfig.Config(src_config=self._snarks_wrapper.clone_config())

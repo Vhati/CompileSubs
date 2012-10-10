@@ -150,9 +150,9 @@ class SnarksEvent(object):
   RANGE_DELETE = "RANGE_DELETE"  # Not used.
   RANGE_INSERT = "RANGE_INSERT"  # Not used.
 
-  _SECTION_FLAGS = [[FLAG_CONFIG_ALL, FLAG_CONFIG_ANY,
-                      [FLAG_CONFIG_FUDGES, FLAG_CONFIG_SHOW_TIME,
-                       FLAG_CONFIG_PARSERS, FLAG_CONFIG_EXPORTERS]]]
+  SECTION_FLAGS = [[FLAG_CONFIG_ALL, FLAG_CONFIG_ANY,
+                     [FLAG_CONFIG_FUDGES, FLAG_CONFIG_SHOW_TIME,
+                      FLAG_CONFIG_PARSERS, FLAG_CONFIG_EXPORTERS]]]
 
   def __init__(self, flags):
     object.__init__(self)
@@ -162,13 +162,13 @@ class SnarksEvent(object):
       self._flags = []
     elif (self._flags):
       # Expand *_ALL flags.
-      for section_list in SnarksEvent._SECTION_FLAGS:
+      for section_list in SnarksEvent.SECTION_FLAGS:
         if (section_list[0] in self._flags):
           for f in section_list[2]:
             if (f not in self._flags):
               self._flags.append(f)  # Add section flag.
       # Add *_ANY flags.
-      for section_list in SnarksEvent._SECTION_FLAGS:
+      for section_list in SnarksEvent.SECTION_FLAGS:
         for f in section_list[2]:
           if (f in self._flags):
             if (section_list[1] not in self._flags):
@@ -298,7 +298,11 @@ class SnarksWrapper(object):
     return copy.deepcopy(self._snarks_stable)
 
   def fire_snarks_event(self, e):
-    """Notifies all listeners that the snarks list has changed."""
+    """Notifies all listeners of changes.
+
+    Don't fire a new event directly from a
+    listener's callback. Schedule it for later.
+    """
     e = e.clone()
     e.set_source(self)
 

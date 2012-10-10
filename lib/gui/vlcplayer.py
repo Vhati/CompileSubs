@@ -216,6 +216,9 @@ class PlayerFrame(wx.Frame):
       self.vlc_event_manager.event_attach(vlc.EventType.MediaPlayerLengthChanged, self._on_vlc_event)
       self.vlc_event_manager.event_attach(vlc.EventType.MediaPlayerTimeChanged, self._on_vlc_event)
 
+    # Start polling GUI controls to nag vlc.
+    self.pulse_timer.Start(milliseconds=250)
+
   def _shrink_button(self, b):
     """Sets a button's preferred size to the average of its current actual and preferred sizes.
     Sizers look at preferred size (which is unaffected by BU_EXACTFIT).
@@ -281,7 +284,7 @@ class PlayerFrame(wx.Frame):
       self.vlc_player.set_media(vlc_media)
       vlc_media.release()
 
-      #self._on_play(None)
+      # A media changed event will trigger playing.
 
     dlg.Destroy()
     if (e is not None): e.Skip(False)  # Consume the event.
@@ -401,6 +404,8 @@ class PlayerFrame(wx.Frame):
   def _on_close(self, e):
     if (self.snark_frame is not None): self.snark_frame.Close()
 
+    self.pulse_timer.Stop()
+
     if (self.vlc_event_manager is not None):
       self.vlc_event_manager.event_detach(vlc.EventType.MediaPlayerMediaChanged)
       self.vlc_event_manager.event_detach(vlc.EventType.MediaPlayerSeekableChanged)
@@ -420,9 +425,7 @@ class PlayerFrame(wx.Frame):
     if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_play(self, e):
-    if (self.vlc_player.play() != -1):
-      self.pulse_timer.Start(milliseconds=250)
-    else:
+    if (self.vlc_player.play() == -1):
       self.set_status_text("Error: Unable to play.", self.STATUS_HELP)
 
     if (e is not None): e.Skip(False)  # Consume the event.
@@ -545,8 +548,6 @@ class PlayerFrame(wx.Frame):
     elif (e.type == vlc.EventType.MediaPlayerStopped):
       logging.debug("VLC stopped.")
       def f():
-        self.pulse_timer.Stop()
-
         self.ctrl_panel.Freeze()
         self.timeslider.SetValue(0)
         self.play_btn.Show(True)
