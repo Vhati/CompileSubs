@@ -40,22 +40,22 @@ class Config(object):
                 description="Destination file to write."))
     args.append(arginfo.Arg(name="first_msg", type=arginfo.STRING,
                 required=False, default=None, choices=None, multiple=False,
-                description="Optional substring to expect of the first tweeted message.\nUse this to skip early msgs, or set to None."))
+                description="Optional substring for parsers to expect of the first comment.\nUse this to skip early comments."))
     args.append(arginfo.Arg(name="fudge_time", type=arginfo.TIMEDELTA,
                 required=True, default=timedelta(minutes=0, seconds=0), choices=None, multiple=False,
-                description="Delay all msgs (+/-)."))
+                description="Delay all comments (+/-)."))
     args.append(arginfo.Arg(name="ignore_users", type=arginfo.STRING,
                 required=False, default=None, choices=None, multiple=True,
                 description="Users to ignore."))
     args.append(arginfo.Arg(name="end_time", type=arginfo.TIMEDELTA,
                 required=False, default=None, choices=None, multiple=False,
-                description="Optional in-movie time to truncate msgs (after fudging).\nUse this to skip late msgs."))
+                description="Optional in-movie time to truncate comments (after fudging).\nUse this to skip late comments."))
     args.append(arginfo.Arg(name="color_enabled", type=arginfo.STRING,
                 required=True, default="random", choices=["no","random","default"], multiple=False,
                 description="Colored subtitles\n  no: there will be no color info.\n  random: assign colors to users randomly.\n  default: let the parser decide.\nAt low resolutions, colored text can be ugly in VLC."))
     args.append(arginfo.Arg(name="show_time", type=arginfo.TIMEDELTA,
                 required=True, default=timedelta(minutes=0, seconds=6), choices=None, multiple=False,
-                description="Duration each msg appears on-screen."))
+                description="Duration each comment appears on-screen."))
     return args
 
   def apply_current_values_to_args(self, args, parser_namespace=None, exporter_namespace=None):

@@ -46,7 +46,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
   disregard this info.
 
   :param src_path: Not used.
-  :param first_msg: If not None, ignore messages until this substring is found.
+  :param first_msg: If not None, ignore comments until this substring is found.
   :param options: A dict of extra options specific to this parser.
                   since_date (optional):
                       UTC Datetime to limit dredging up old tweets.
@@ -76,7 +76,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
   try:
     my_screen_name = tweepy_api.auth.get_username()
 
-    # List of pattern/replacement tuples to strip reply topic from messages.
+    # List of pattern/replacement tuples to strip reply topic from comments.
     reply_name_escaped = re.escape(my_screen_name)
     reply_regexes = [(re.compile(" +@"+ reply_name_escaped +" +", re.IGNORECASE), " "),
                      (re.compile(" *@"+ reply_name_escaped +" *", re.IGNORECASE), "")]
@@ -138,7 +138,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
 
             if (first_msg):
               if (snark["msg"].find(first_msg) != -1):
-                done = True  # Found the first message.
+                done = True  # Found the first comment.
                 break
 
           if (last_status_id is not None):

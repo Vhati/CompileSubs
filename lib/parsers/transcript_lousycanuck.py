@@ -25,7 +25,7 @@ def get_arginfo():
   args = []
   args.append(arginfo.Arg(name="reply_name", type=arginfo.STRING,
               required=False, default=None, choices=None, multiple=False,
-              description="The name to which replies were directed (no \"@\").\nRegexes will remove it from messages."))
+              description="The name to which replies were directed (no \"@\").\nRegexes will remove it from comments."))
   return args
 
 def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_func=None):
@@ -39,11 +39,11 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
   disregard this info.
 
   :param src_path: A url, or saved html source.
-  :param first_msg: If not None, ignore messages until this substring is found.
+  :param first_msg: If not None, ignore comments until this substring is found.
   :param options: A dict of extra options specific to this parser.
                   reply_name (optional):
                       The name to which replies were directed.
-                      Regexes will remove it from messages.
+                      Regexes will remove it from comments.
   :param keep_alive_func: Optional replacement to get an abort boolean.
   :param sleep_func: Optional replacement to sleep N seconds.
   :return: A List of snark dicts.
@@ -57,7 +57,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
   # Regex to parse tweet info out of html.
   snark_ptn = re.compile("(?:<p>)?<a href='([^']*)'>([^<]*)</a>: (.*?) +<br ?/><font size=-3><a href='([^']*)'[^>]*>([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})</a></font>(?:<br ?/>|</p>)?", re.IGNORECASE)
 
-  # List of pattern/replacement tuples to strip reply topic from messages.
+  # List of pattern/replacement tuples to strip reply topic from comments.
   reply_regexes = []
   if (ns+"reply_name" in options and options[ns+"reply_name"]):
     reply_name_escaped = re.escape(options[ns+"reply_name"])

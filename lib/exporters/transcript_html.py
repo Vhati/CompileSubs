@@ -22,7 +22,7 @@ required_subsystems = []
 
 
 def get_description():
-  return "Writes snarks as html with links to each user and message."
+  return "Writes snarks as html with links to each user and comment."
 
 def get_arginfo():
   args = []
@@ -31,11 +31,11 @@ def get_arginfo():
               description="Boolean to only generate an excerpt to paste elsewhere.\nDefault is True."))
   args.append(arginfo.Arg(name="faux_twitter_links", type=arginfo.BOOLEAN,
               required=False, default=False, choices=[True,False], multiple=False,
-              description="Boolean to guess twitter user links, if the parser didn't provide them.\nLinks to messages still can't be guessed and will be \"#\"\nDefault is False."))
+              description="Boolean to guess twitter user links, if the parser didn't provide them.\nLinks to comments still can't be guessed and will be \"#\"\nDefault is False."))
   return args
 
 def write_snarks(dest_file, snarks, show_time, options={}, keep_alive_func=None, sleep_func=None):
-  """Writes snarks as html with links to each user and message.
+  """Writes snarks as html with links to each user and comment.
 
   Links will be inert unless snarks have the non-standard
   "user_url" and "msg_url" attributes, or the faux_twitter_links
@@ -51,7 +51,7 @@ def write_snarks(dest_file, snarks, show_time, options={}, keep_alive_func=None,
                   faux_twitter_links (optional):
                       Boolean to guess twitter user links, if snarks
                       lack the "user_url" attribute. But links to
-                      messages will still be "#". Default is False.
+                      comments will still be "#". Default is False.
   :param keep_alive_func: Optional replacement to get an abort boolean.
   :param sleep_func: Optional replacement to sleep N seconds.
   """

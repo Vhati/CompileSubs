@@ -1,4 +1,4 @@
-CompileSubs v3.51
+CompileSubs v3.52
 
 Author:
   David Millis (tvtronix@yahoo.com)
@@ -51,6 +51,7 @@ in the ./share/ directory.
 
 Changes
 
+3.52 - Changed 'message'/'msg' to 'comment' in descriptions.
 3.51 - Added twitter_mentions parser.
        Added threading for parsers and exporters.
        Widened in-gui config text fields.

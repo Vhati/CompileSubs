@@ -59,7 +59,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
   Twitter's search API only reaches back a few days. :/
 
   :param src_path: Not used.
-  :param first_msg: If not None, ignore messages prior to one containing this substring.
+  :param first_msg: If not None, ignore comments prior to one containing this substring.
   :param options: A dict of extra options specific to this parser.
                   reply_name:
                       The name to which replies were directed (no "@").
@@ -96,7 +96,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
     logging.error("Required parser options weren't provided: %s." % ", ".join(missing_options))
     raise common.ParserError("Parser failed.")
 
-  # List of pattern/replacement tuples to strip reply topic from messages.
+  # List of pattern/replacement tuples to strip reply topic from comments.
   reply_name_escaped = re.escape(options[ns+"reply_name"])
   reply_regexes = [(re.compile(" +@"+ reply_name_escaped +" +", re.IGNORECASE), " "),
                    (re.compile(" *@"+ reply_name_escaped +" *", re.IGNORECASE), "")]

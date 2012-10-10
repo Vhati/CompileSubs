@@ -40,12 +40,12 @@ src_path = "file:../attic/log_Moontrap.txt"
 dest_path = "./MockTM - Moontrap.srt"
 
 
-# Optional substring to expect of the first tweeted message.
-#   Use this to skip early msgs, or set to None.
+# Optional substring for parsers to expect of the first tweeted comment.
+#   Use this to skip early comments, or set to None.
 first_msg = None
 
 
-# Delay all msgs (+/-).
+# Use this to delay all comments (+/-).
 fudge_time = timedelta(minutes=0, seconds=0)
 
 # Users egregiously out of sync can be additionally offset (+/-).
@@ -62,8 +62,8 @@ fudge_users["@brx0"] = [(timedelta(minutes=0, seconds=0), timedelta(minutes=0, s
 ignore_users = []
 
 
-# Optional in-movie time to truncate msgs (after fudging).
-#   Use this to skip late msgs, or set to None.
+# Optional in-movie time to truncate comments (after fudging).
+#   Use this to skip late comments, or set to None.
 #   end_time = timedelta(hours=2, minutes=0, seconds=0)
 #
 end_time = None
@@ -77,7 +77,7 @@ end_time = None
 #   At low resolutions, colored text can be ugly in VLC.
 color_enabled = "random"
 
-# Duration each msg appears on-screen.
+# Duration each comment appears on-screen.
 show_time = timedelta(seconds=6)
 
 # Parser-specific options.

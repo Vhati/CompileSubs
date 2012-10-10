@@ -29,7 +29,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
   """Collects snarks from somewhere.
 
   :param src_path: A url, or file.
-  :param first_msg: If not None, ignore messages until this substring is found.
+  :param first_msg: If not None, ignore comments until this substring is found.
   :param options: A dict of extra options specific to this parser.
                   Not used.
   :param keep_alive_func: Optional replacement to get an abort boolean.
