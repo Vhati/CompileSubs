@@ -4,10 +4,12 @@ import logging
 import re
 import StringIO
 import sys
+import time
 import xmlrpclib
 
 from lib import arginfo
 from lib import common
+from lib import global_config
 from lib import snarkutils
 
 
@@ -16,6 +18,9 @@ ns = "transcript_wordpress."
 
 # Whether dest_file arg is used.
 uses_dest_file = False
+
+# Names of lib.subsystem modules that should be set up in advance.
+required_subsystems = []
 
 
 def get_description():
@@ -52,7 +57,7 @@ def get_arginfo():
               description="An html excerpt exporter.\nSpecify its own options as normal.\nDefault is \"transcript_html\"."))
   return args
 
-def write_snarks(dest_file, snarks, show_time, options={}):
+def write_snarks(dest_file, snarks, show_time, options={}, keep_alive_func=None, sleep_func=None):
   """Writes snarks to a new Wordpress blog post.
 
   RPC support needs to be enabled on the server.
@@ -89,8 +94,13 @@ def write_snarks(dest_file, snarks, show_time, options={}):
                       An html excerpt exporter. Specify its
                       own options as normal. Default is
                       "transcript_html".
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
   :raises: ExporterError, xmlrpclib.Fault, xmlrpclib.ProtocolError
   """
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
   missing_options = [o for o in ["xmlrpc_url","blog_user","blog_pass","post_title"] if (not options[ns+o])]
   if (len(missing_options) > 0):
     logging.error("Required exporter options weren't provided: %s." % ", ".join(missing_options))

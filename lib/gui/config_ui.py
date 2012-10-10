@@ -122,13 +122,14 @@ class ConfigFrame(wx.Frame):
       sections_nb.AddPage(section_panel, section.name)
 
     pane_sizer.Add(sections_nb, 1, flag=wx.EXPAND)
+    pane_sizer.Add((-1,5))
 
     if (self.continue_func is not None):
       def continue_callback(e):
         self.Close()
         self.continue_func()
       continue_btn = wx.Button(self._pane, wx.ID_ANY, label="Continue", style=wx.BU_EXACTFIT)
-      pane_sizer.Add(continue_btn, flag=wx.ALIGN_RIGHT|wx.ALL, border=10)
+      pane_sizer.Add(continue_btn, flag=wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, border=5)
       continue_btn.Bind(wx.EVT_BUTTON, continue_callback)
 
     sizer = wx.BoxSizer(wx.VERTICAL)
@@ -261,6 +262,8 @@ class ArgPanel(wx.Panel):
 
     self._arg = self.custom_args["arg"]
     self._value_fields = []
+    self._browsefield_width = 175
+    self._textfield_width = 125
 
     info_value_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -405,16 +408,17 @@ class ArgPanel(wx.Panel):
     elif (self._arg.type == arginfo.TIMEDELTA):
       default_str = common.delta_str(timedelta(0))
       if (self._arg.default is not None): default_str = common.delta_str(self._arg.default)
-      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, value=default_str)
+      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, size=(self._textfield_width,-1), value=default_str)
     elif (self._arg.type == arginfo.DATETIME):
       default_str = "0000-00-00"
       if (self._arg.default is not None): default_str = self._arg.default.strftime("%Y-%m-%d")
-      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, value=default_str)
+      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, size=(self._textfield_width,-1), value=default_str)
     elif (self._arg.type == arginfo.FILE):
       default_str = ""
       if (self._arg.default is not None): default_str = self._arg.default
       value_field = wx.lib.filebrowsebutton.FileBrowseButton(self._value_panel, wx.ID_ANY, labelText="", buttonText="File...")
-      value_field.browseButton.SetWindowStyleFlag(wx.BU_EXACTFIT)
+      value_field.textControl.SetInitialSize((self._browsefield_width,-1))
+      value_field.browseButton.SetWindowStyleFlag(value_field.browseButton.GetWindowStyleFlag()|wx.BU_EXACTFIT)
       value_field.SetValue(default_str, 0)
     elif (self._arg.type == arginfo.FILE_OR_URL):
       def file_callback(e):
@@ -446,22 +450,23 @@ class ArgPanel(wx.Panel):
       default_str = ""
       if (self._arg.default is not None): default_str = self._arg.default
       value_field = wx.lib.filebrowsebutton.FileBrowseButton(self._value_panel, wx.ID_ANY, labelText="", buttonText="File...", changeCallback=file_callback)
-      value_field.browseButton.SetWindowStyleFlag(wx.BU_EXACTFIT)
+      value_field.textControl.SetInitialSize((self._browsefield_width,-1))
+      value_field.browseButton.SetWindowStyleFlag(value_field.browseButton.GetWindowStyleFlag()|wx.BU_EXACTFIT)
       value_field.SetValue(default_str, 0)
     elif (self._arg.type == arginfo.HIDDEN_STRING):
       default_str = ""
       if (self._arg.default is not None): default_str = self._arg.default
-      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, style=wx.TE_PASSWORD, value=default_str)
+      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, style=wx.TE_PASSWORD, size=(self._textfield_width,-1), value=default_str)
     elif (self._arg.type == arginfo.STRING):
       default_str = ""
       if (self._arg.default is not None): default_str = self._arg.default
-      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, value=default_str)
+      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, size=(self._textfield_width,-1), value=default_str)
     else:  # boolean, integer, url
       default_str = ""
       if (self._arg.default is not None):
         default_str = self._arg.default
         if (isinstance(default_str, basestring) is False): default_str = repr(default_str)
-      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, value=default_str)
+      value_field = wx.TextCtrl(self._value_panel, wx.ID_ANY, size=(self._textfield_width,-1), value=default_str)
     self._value_fields.append(value_field)
     self._fields_sizer.Add(value_field, flag=wx.ALIGN_RIGHT)
 

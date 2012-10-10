@@ -2,9 +2,11 @@ from datetime import datetime, timedelta
 import logging
 import re
 import sys
+import time
 
 from lib import arginfo
 from lib import common
+from lib import global_config
 
 
 # Namespace for options.
@@ -12,6 +14,9 @@ ns = "subrip."
 
 # Whether dest_file arg is used.
 uses_dest_file = True
+
+# Names of lib.subsystem modules that should be set up in advance.
+required_subsystems = []
 
 
 def get_description():
@@ -24,7 +29,7 @@ def get_arginfo():
               description="Boolean to prepend each snark msg with user.\nDefault is True."))
   return args
 
-def write_snarks(dest_file, snarks, show_time, options={}):
+def write_snarks(dest_file, snarks, show_time, options={}, keep_alive_func=None, sleep_func=None):
   """Writes snarks as SubRip subtitles.
 
   :param dest_file: A binary-mode file-like object to write into.
@@ -34,7 +39,12 @@ def write_snarks(dest_file, snarks, show_time, options={}):
                   include_names (optional):
                       Boolean to prepend each snark msg with user.
                       Default is True.
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
   """
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
   include_names = True
   if (ns+"include_names" in options and not options[ns+"include_names"]):
     include_names = False

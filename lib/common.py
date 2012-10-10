@@ -6,6 +6,7 @@ import logging
 import re
 import sys
 import weakref
+import webbrowser
 
 
 def html_unescape(text):
@@ -303,7 +304,7 @@ class SnarksWrapper(object):
 
     for ref in self._listeners:
       l = ref()
-      if (l is not None):
+      if (l):  # Skip if None or resolving to False.
         l.on_snarks_changed(e.clone())
       else:
         self._listeners.remove(ref)
@@ -355,20 +356,32 @@ class Changeling(Bunch):
 #   class instances and/or deserialization.
 
 
-# Replaceable backend to prompt for a string.
-prompt_func = lambda msg: raw_input(msg)
+def prompt_func(msg, hidden=False, notice=None, url=None):
+  """A replaceable backend to modally prompt for a string from the user."""
+  if (notice): print "\n"+ notice
+  if (url):
+    print "\n"+ url
+    try:
+      logging.info("Launching browser: %s" % url)
+      webbrowser.open_new_tab(url)
+    except (webbrowser.Error) as err:
+      logging.error("Failed to launch browser: %s." % str(err))
+  print ""
+  if (hidden):
+    return getpass.getpass(msg)
+  else:
+    return raw_input(msg)
 
-# Replaceable backend to prompt for a password.
-hidden_prompt_func = lambda msg: getpass.getpass(msg)
+# Backup the original.
+_prompt_func = prompt_func
 
-def prompt(msg, hidden=False):
-  """A frontend to prompt for a string from the user.
+def prompt(msg, hidden=False, notice=None, url=None):
+  """A frontend to modally prompt for a string from the user.
 
   :param msg: The message to display.
   :param hidden: Don't echo, when requesting a password.
+  :param notice: Optional descriptive paragraph.
+  :param url: Optional hyperlink.
   :return: A string.
   """
-  if (hidden):
-    return hidden_prompt_func(msg)
-  else:
-    return prompt_func(msg)
+  return prompt_func(msg, hidden=hidden, notice=notice, url=url)

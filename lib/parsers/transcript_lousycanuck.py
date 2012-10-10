@@ -3,14 +3,19 @@ import contextlib
 import logging
 import re
 import sys
+import time
 import urllib2
 
 from lib import arginfo
 from lib import common
+from lib import global_config
 
 
 # Namespace for options.
 ns = "lousycanuck."
+
+# Names of lib.subsystem modules that should be set up in advance.
+required_subsystems = []
 
 
 def get_description():
@@ -23,7 +28,7 @@ def get_arginfo():
               description="The name to which replies were directed (no \"@\").\nRegexes will remove it from messages."))
   return args
 
-def fetch_snarks(src_path, first_msg, options={}):
+def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_func=None):
   """Collects snarks from an html Transcript post on LousyCanuck's blog.
   See: http://twitter.com/MockTM
   See: http://freethoughtblogs.com/lousycanuck/
@@ -39,9 +44,16 @@ def fetch_snarks(src_path, first_msg, options={}):
                   reply_name (optional):
                       The name to which replies were directed.
                       Regexes will remove it from messages.
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
   :return: A List of snark dicts.
   :raises: ParserError
   """
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
+  if (not src_path): raise common.ParserError("The %s parser requires the general arg, \"src_path\", to be set." % re.sub(".*[.]", "", __name__))
+
   # Regex to parse tweet info out of html.
   snark_ptn = re.compile("(?:<p>)?<a href='([^']*)'>([^<]*)</a>: (.*?) +<br ?/><font size=-3><a href='([^']*)'[^>]*>([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})</a></font>(?:<br ?/>|</p>)?", re.IGNORECASE)
 
@@ -61,7 +73,7 @@ def fetch_snarks(src_path, first_msg, options={}):
   lines = []
   try:
     with contextlib.closing(urllib2.urlopen(src_path)) as snark_file:
-      while (True):
+      while (keep_alive_func()):
         line = snark_file.readline()
         if (line == ''): break
         line = re.sub("\r\n?", "\n", line)  # Local files are opened without universal newlines.

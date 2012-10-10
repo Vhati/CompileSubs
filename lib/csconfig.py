@@ -22,7 +22,7 @@ class Config(object):
         setattr(self, a, None)
 
   def get_description(self):
-    return "..."
+    return "Scroll down to apply changes."
 
   def get_arginfo(self):
     args = []

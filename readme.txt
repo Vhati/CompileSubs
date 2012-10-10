@@ -1,4 +1,4 @@
-CompileSubs v3.50
+CompileSubs v3.51
 
 Author:
   David Millis (tvtronix@yahoo.com)
@@ -51,6 +51,14 @@ in the ./share/ directory.
 
 Changes
 
+3.51 - Added twitter_mentions parser.
+       Added threading for parsers and exporters.
+       Widened in-gui config text fields.
+       Added GUI prompts.
+       Added shared subsystems, init-able APIs for parsers/exporters.
+       Added Tweepy subsystem for authenticated Twitter access.
+       Fixed error when disabling an optional date in the GUI config.
+       Fixed error in transcript_html exporter when escaping chars.
 3.50 - Made configuration editable in the GUI.
 3.00 - Added a GUI for setting per-user fudges.
        Added logging.
@@ -106,4 +114,5 @@ wxPython 2.8
 
 Sources
 
+Tweepy       (2012-10-07)  https://github.com/tweepy/tweepy
 VLC Bindings (2012-09-28)  http://wiki.videolan.org/Python_bindings

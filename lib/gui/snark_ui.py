@@ -45,11 +45,13 @@ class SnarkFrame(wx.Frame):
     self.snark_grid.SetColSize(self.snark_table.COL_MSG, 190)
     self.snark_grid.SetColSize(self.snark_table.COL_GLOBALLY_FUDGED_TIME, 55)
     self.snark_grid.SetColSize(self.snark_table.COL_USER_FUDGE, 55)
+    self.snark_grid.SetColSize(self.snark_table.COL_DATE, 150)
     self.snark_grid.SetRowLabelSize(35)
     self.snark_grid.DisableDragRowSize()
     self.snark_grid.AutoSizeColumn(self.snark_table.COL_FINAL_TIME)
     self.snark_grid.AutoSizeColumn(self.snark_table.COL_GLOBALLY_FUDGED_TIME)
     self.snark_grid.AutoSizeColumn(self.snark_table.COL_USER_FUDGE)
+    self.snark_grid.AutoSizeColumn(self.snark_table.COL_DATE)
     grid_sizer.Add(self.snark_grid, 1, flag=wx.EXPAND|wx.BOTTOM, border=10)
     grid_panel.SetSizer(grid_sizer)
 
@@ -167,6 +169,7 @@ class SnarkFrame(wx.Frame):
       self.snark_grid.AutoSizeColumn(self.snark_table.COL_FINAL_TIME)
       self.snark_grid.AutoSizeColumn(self.snark_table.COL_GLOBALLY_FUDGED_TIME)
       self.snark_grid.AutoSizeColumn(self.snark_table.COL_USER_FUDGE)
+      self.snark_grid.AutoSizeColumn(self.snark_table.COL_DATE)
 
     if (self._update_video_row() is True):
       self.snark_table.set_video_row(self._last_video_row)
@@ -376,7 +379,8 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
                  ("COL_USER", "User"),
                  ("COL_MSG", "Msg"),
                  ("COL_GLOBALLY_FUDGED_TIME", "Globally\nFudged"),
-                 ("COL_USER_FUDGE", "User\nFudge")
+                 ("COL_USER_FUDGE", "User\nFudge"),
+                 ("COL_DATE", "Original\nDate")
                  ]
     self._col_labels = []
     for (n,(enum,name)) in enumerate(cols):
@@ -385,7 +389,7 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
 
     self._col_attrs = {}
     # Set right-aligned column attrs.
-    for col in [self.COL_FINAL_TIME,self.COL_GLOBALLY_FUDGED_TIME,self.COL_USER_FUDGE]:
+    for col in [self.COL_FINAL_TIME,self.COL_GLOBALLY_FUDGED_TIME,self.COL_USER_FUDGE,self.COL_DATE]:
       attr = wx.grid.GridCellAttr()
       attr.SetAlignment(wx.ALIGN_RIGHT,wx.ALIGN_CENTER)
       self._col_attrs[col] = attr
@@ -429,6 +433,8 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
         return common.delta_str(timedelta(0))
       else:
         return common.delta_str(timedelta(0))
+    elif (col == self.COL_DATE):
+      return snark["date"].strftime("%Y-%m-%d %H:%M:%S")
     else:
       return "(%s,%s)" % (row, col)
 

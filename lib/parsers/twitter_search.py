@@ -9,15 +9,20 @@ import urllib2
 
 from lib import arginfo
 from lib import common
+from lib import global_config
 
 
 # Namespace for options.
 ns = "twitter_search."
 
+# Names of lib.subsystem modules that should be set up in advance.
+required_subsystems = []
+
 
 def get_description():
   return ("Collects snarks from a Twitter search.\n"+
-          "Finds tweets from an account and any @reply mentions of it.")
+          "Finds tweets from an account and any @reply mentions of it.\n\n"+
+          "Note: Twitter's search API only reaches back a few days.")
 
 def get_arginfo():
   args = []
@@ -35,7 +40,7 @@ def get_arginfo():
               description="Search X times to fill omissions in results."))
   return args
 
-def fetch_snarks(src_path, first_msg, options={}):
+def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_func=None):
   """Collects snarks from a Twitter search. Finds
   tweets from an account and any @reply mentions of it.
   See: https://dev.twitter.com/docs/api/1/get/search
@@ -64,9 +69,14 @@ def fetch_snarks(src_path, first_msg, options={}):
                       UTC Datetime to limit dredging up new tweets.
                   passes (optional):
                       Search X times to fill omissions in results.
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
   :return: A List of snark dicts.
   :raises: ParserError
   """
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
   search_url = "http://search.twitter.com/search.json"
 
   since_date = None
@@ -101,10 +111,10 @@ def fetch_snarks(src_path, first_msg, options={}):
   snarks = []
   pass_result_count = 0
 
-  while (url is not None):
+  while (keep_alive_func() and url is not None):
     notice_url = re.sub("[^?]+/search.json.*[?&](page=[0-9]+).*", "\g<1>", url)
     logging.info("Parsing: %s" % notice_url)
-    time.sleep(1)
+    sleep_func(1)
 
     json_obj = None
     try:
@@ -126,11 +136,11 @@ def fetch_snarks(src_path, first_msg, options={}):
       snark = {}
       snark["user"] = "@%s" % result["from_user"]
       snark["msg"] =  result["text"]
-      for reply_ptn, reply_rep in reply_regexes:
+      for (reply_ptn, reply_rep) in reply_regexes:
         snark["msg"] =  reply_ptn.sub(reply_rep, snark["msg"])
       snark["msg"] =  common.asciify(common.html_unescape(snark["msg"]))
 
-      snark["date"] = datetime.strptime(result["created_at"] +" UTC", '%a, %d %b %Y %H:%M:%S +0000 %Z')
+      snark["date"] = datetime.strptime(result["created_at"] +" UTC", "%a, %d %b %Y %H:%M:%S +0000 %Z")
 
       snark["user_url"] = "http://www.twitter.com/%s" % result["from_user"]
       snark["msg_url"] = "http://twitter.com/#!/%s/status/%s" % (result["from_user"], result["id"])

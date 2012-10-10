@@ -61,7 +61,7 @@ class CleanupHandler(object):
     t.start()
 
   def _cleanup(self):
-    """The acutal cleanup code. Subclasses should override this."""
+    """The actual cleanup code. Subclasses should override this."""
     os._exit(0)
 
 
@@ -85,6 +85,18 @@ class CustomCleanupHandler(CleanupHandler):
     self.sockets = sockets
     self.procs = procs
     self.guis = guis
+    self._cleaning_event = threading.Event()
+
+  def is_not_cleaning(self):
+    """Pollable boolean that returns False to interrupt, True otherwise.
+    This value is set during _cleanup() after registered objects are
+    sent a kill signal.
+    """
+    return (not self._cleaning_event.is_set())
+
+  def nap(self, seconds):
+    """Sleep in an interruptable manner."""
+    self._cleaning_event.wait(seconds)
 
   def add_thread(self, t):
     with self.caught_lock:
@@ -134,6 +146,8 @@ class CustomCleanupHandler(CleanupHandler):
         if (p): self.kill_proc(p)
       for g in self.guis:
         if (g): self.kill_gui(g)
+
+      self._cleaning_event.set()
 
       # Wait for all the other threads to run out
       #while len([t for t in threading.enumerate() if not t.daemon]) > 1:

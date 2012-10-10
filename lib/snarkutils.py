@@ -7,6 +7,7 @@ import string
 import StringIO
 
 from lib import common
+from lib import global_config
 
 
 random.seed()
@@ -102,7 +103,11 @@ def config_repr(config):
   return string.Template(config_template).substitute(config_strings)
 
 def delta_repr(delta):
-  """Returns a pretty repr string of a timedelta."""
+  """Returns a pretty repr string of a timedelta.
+  If delta is None, repr(None) will be returned.
+  """
+  if (delta is None): return repr(None)
+
   minutes, seconds = divmod(common.delta_seconds(delta), 60)
 
   return "timedelta(minutes=%d, seconds=%d)" % (minutes, seconds)
@@ -112,17 +117,70 @@ def datetime_repr(dt):
   return "datetime(%d, %d, %d, %d, %d)" % (dt.year, dt.month, dt.day, dt.hour, dt.minute)
 
 
-def parse_snarks(config):
+def get_parser(parser_name):
+  """Returns a parser by name."""
+  parsers_pkg = __import__("lib.parsers", globals(), locals(), [parser_name])
+  parser_mod = getattr(parsers_pkg, parser_name)
+  return parser_mod
+
+def get_exporter(exporter_name):
+  """Returns an exporter by name."""
+  exporters_pkg = __import__("lib.exporters", globals(), locals(), [exporter_name])
+  exporter_mod = getattr(exporters_pkg, exporter_name)
+  return exporter_mod
+
+def get_subsystem(subsystem_name):
+  """Returns a subsystem by name."""
+  subsystems_pkg = __import__("lib.subsystems", globals(), locals(), [subsystem_name])
+  subsystem_mod = getattr(subsystems_pkg, subsystem_name)
+  return subsystem_mod
+
+def init_subsystems(subsystem_names, keep_alive_func=None, sleep_func=None):
+  """Calls init() on each in a list of subsystems.
+
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
+  :raises: CompileSubsException, afterward, if any failed.
+  """
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
+  failures = []
+  for s in subsystem_names:
+    if (keep_alive_func() is False): break
+    ready = False
+    try:
+      ready = get_subsystem(s).init(keep_alive_func=keep_alive_func, sleep_func=sleep_func)
+    except (Exception) as err:
+      logging.exception("Subsystem import or init failed.")
+    if (ready is False):
+      failures.append(s)
+
+  if (len(failures) > 0):
+    raise common.CompileSubsException("Failed to initialize required subsystems: %s." % (", ".join(failures)))
+
+
+def parse_snarks(config, keep_alive_func=None, sleep_func=None):
   """Returns a list of snark dicts{user,msg,date} from a parser.
   More keys might be present, depending on the parser.
   These snarks do NOT have a "time" key.
 
-  :raises: ParserError
+  If the parser requires any subsystems, they will be init'd.
+
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
+  :raises: ParserError, CompileSubsException
   """
-  parsers_pkg = __import__("lib.parsers", globals(), locals(), [config.parser_name])
-  parser_mod = getattr(parsers_pkg, config.parser_name)
-  parse_func = getattr(parser_mod, "fetch_snarks")
-  snarks = parse_func(config.src_path, config.first_msg, config.parser_options)
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
+  parser_mod = get_parser(config.parser_name)
+  init_subsystems(parser_mod.required_subsystems, keep_alive_func=keep_alive_func, sleep_func=sleep_func)
+
+  if (keep_alive_func() is False):
+    raise common.ParserError("Parsing was interrupted.")
+
+  snarks = parser_mod.fetch_snarks(config.src_path, config.first_msg, config.parser_options, keep_alive_func=keep_alive_func, sleep_func=sleep_func)
 
   return snarks
 
@@ -275,7 +333,7 @@ def process_snarks(config, snarks):
       if ("color" in snark): del snark["color"]
 
 
-def export_snarks(config, snarks):
+def export_snarks(config, snarks, keep_alive_func=None, sleep_func=None):
   """Sends a list of processed snark dicts to an exporter.
   The snarks must, at minimum, contain {user,msg,time}.
 
@@ -284,17 +342,27 @@ def export_snarks(config, snarks):
   attribute is True, that buffer will be written to
   an actual file.
 
-  :raises: ExporterError
+  If the exporter requires any subsystems, they will be init'd.
+
+  :raises: ExporterError, CompileSubsException
   """
-  exporters_pkg = __import__("lib.exporters", globals(), locals(), [config.exporter_name])
-  exporter_mod = getattr(exporters_pkg, config.exporter_name)
-  write_func = getattr(exporter_mod, "write_snarks")
-  uses_dest_file = getattr(exporter_mod, "uses_dest_file", False)
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
+  exporter_mod = get_exporter(config.exporter_name)
+  init_subsystems(exporter_mod.required_subsystems, keep_alive_func=keep_alive_func, sleep_func=sleep_func)
+
+  if (keep_alive_func() is False):
+    raise common.ExporterError("Exporting was interrupted.")
 
   with contextlib.closing(StringIO.StringIO()) as buf:
-    write_func(buf, snarks, config.show_time, config.exporter_options)
+    exporter_mod.write_snarks(buf, snarks, config.show_time, config.exporter_options, keep_alive_func=keep_alive_func, sleep_func=sleep_func)
     buf.seek(0)
-    if (config.dest_path and uses_dest_file):
+
+    if (keep_alive_func() is False):
+      raise common.ExporterError("Exporting was interrupted.")
+
+    if (config.dest_path and exporter_mod.uses_dest_file):
       with open(config.dest_path, "wb") as dest_file:
         shutil.copyfileobj(buf, dest_file)
 

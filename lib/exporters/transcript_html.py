@@ -3,10 +3,12 @@ import cgi
 import logging
 import re
 import sys
+import time
 import urllib2
 
 from lib import arginfo
 from lib import common
+from lib import global_config
 
 
 # Namespace for options.
@@ -14,6 +16,9 @@ ns = "transcript_html."
 
 # Whether dest_file arg is used.
 uses_dest_file = True
+
+# Names of lib.subsystem modules that should be set up in advance.
+required_subsystems = []
 
 
 def get_description():
@@ -29,7 +34,7 @@ def get_arginfo():
               description="Boolean to guess twitter user links, if the parser didn't provide them.\nLinks to messages still can't be guessed and will be \"#\"\nDefault is False."))
   return args
 
-def write_snarks(dest_file, snarks, show_time, options={}):
+def write_snarks(dest_file, snarks, show_time, options={}, keep_alive_func=None, sleep_func=None):
   """Writes snarks as html with links to each user and message.
 
   Links will be inert unless snarks have the non-standard
@@ -47,7 +52,12 @@ def write_snarks(dest_file, snarks, show_time, options={}):
                       Boolean to guess twitter user links, if snarks
                       lack the "user_url" attribute. But links to
                       messages will still be "#". Default is False.
+  :param keep_alive_func: Optional replacement to get an abort boolean.
+  :param sleep_func: Optional replacement to sleep N seconds.
   """
+  if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
+  if (sleep_func is None): sleep_func = global_config.nap
+
   if (ns+"excerpt_only" in options and options[ns+"excerpt_only"] is False):
     dest_file.write("<html>\r\n<body>\r\n")
 
@@ -76,7 +86,8 @@ def write_snarks(dest_file, snarks, show_time, options={}):
     snark_msg = re.sub("\n", "<br/>", snark_msg)
 
     # Numerically escape exotic chars.
-    badchar_ptn = re.compile(eval(r'u"[&<>\"\u0080-\uffff]+"'))
+    badchar_ptn = re.compile(eval(r'u"[&<>\"\u0080-\uffff]"'))
+
     snark_msg = re.sub(badchar_ptn, lambda m: ("&#%d;" % ord(m.group(0))), snark_msg)
 
     dest_file.write("<a href='%s'>%s</a>: %s <br/><font size=-3><a href='%s' style='color: grey; text-decoration: none;'>%s</a></font><br/>" % (snark_user_url, snark_user, snark_msg, snark_msg_url, snark_date))

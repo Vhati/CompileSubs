@@ -66,7 +66,7 @@ ignore_users = []
 #   Use this to skip late msgs, or set to None.
 #   end_time = timedelta(hours=2, minutes=0, seconds=0)
 #
-end_time = timedelta(hours=1, minutes=22, seconds=49)
+end_time = None
 
 
 # Colored subtitles

@@ -18,6 +18,7 @@ import wx.grid
 
 from lib import common
 from lib import global_config
+from lib import killable_threading
 from lib import snarkutils
 from lib.gui import snark_ui
 from lib.gui import vlc
@@ -171,7 +172,7 @@ class PlayerFrame(wx.Frame):
 
   def init_vlc(self):
     """Sets the window id where VLC will render video output.
-    On platforms with GTK, this is only possible after the
+    On platforms with GTK, this might only be possible after the
     window has been created.
     """
     # Gotta mention marq in the instance for marquee methods to work.
@@ -247,6 +248,10 @@ class PlayerFrame(wx.Frame):
     self._last_status_tip = None
     if (e is not None): e.Skip(True)
 
+  def set_status_text(self, message, status_field):
+    """Sets status bar text."""
+    self.statusbar.SetStatusText(message, status_field)
+
   def _time_string(self, milliseconds):
     """Converts milliseconds into a 0:00:00 string, or --:-- if given None."""
     if (milliseconds is None): return "--:--"
@@ -314,67 +319,82 @@ class PlayerFrame(wx.Frame):
     if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_parse(self, e):
-    try:
-      config = self._snarks_wrapper.clone_config()
+    config = self._snarks_wrapper.clone_config()
 
-      logging.info("Calling %s parser..." % config.parser_name)
-      self.statusbar.SetStatusText("Calling %s parser..." % config.parser_name, self.STATUS_HELP)
-      snarks = snarkutils.parse_snarks(config)
+    def threaded_code(snarks_wrapper=self._snarks_wrapper, config=config, keep_alive_func=None, sleep_func=None):
+      # Don't touch snarks_wrapper until back in the main thread.
+      try:
+        logging.info("Calling %s parser..." % config.parser_name)
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Calling %s parser..." % config.parser_name})
+        snarks = snarkutils.parse_snarks(config, keep_alive_func=keep_alive_func, sleep_func=sleep_func)
 
-      if (len(snarks) == 0):
-        raise common.CompileSubsException("No messages were parsed.")
+        if (len(snarks) == 0):
+          raise common.CompileSubsException("No messages were parsed.")
 
-      snarkutils.gui_preprocess_snarks(config, snarks)
-      snarkutils.gui_fudge_users(config, snarks)
+        snarkutils.gui_preprocess_snarks(config, snarks)
+        snarkutils.gui_fudge_users(config, snarks)
 
-      if (len(snarks) == 0):
-        raise common.CompileSubsException("After preprocessing, no messages were left.")
+        if (len(snarks) == 0):
+          raise common.CompileSubsException("After preprocessing, no messages were left.")
 
-      logging.info("Parsing succeeded.")
-      self.statusbar.SetStatusText("Parsing succeeded.", self.STATUS_HELP)
+        logging.info("Parsing succeeded.")
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Parsing succeeded."})
 
-      self._snarks_wrapper.checkout(self.__class__.__name__)
-      self._snarks_wrapper.set_snarks(snarks)
-      self._snarks_wrapper.commit()
+        def main_code(snarks_wrapper=snarks_wrapper, snarks=snarks):
+          snarks_wrapper.checkout(self.__class__.__name__)
+          snarks_wrapper.set_snarks(snarks)
+          snarks_wrapper.commit()
 
-      event = common.SnarksEvent([common.SnarksEvent.FLAG_SNARKS])
-      self._snarks_wrapper.fire_snarks_event(event)
+          event = common.SnarksEvent([common.SnarksEvent.FLAG_SNARKS])
+          snarks_wrapper.fire_snarks_event(event)
+        wx.CallAfter(main_code)
 
-    except (common.CompileSubsException) as err:
-      # Parser failed in an uninteresting way.
-      logging.error(str(err))
-      self.statusbar.SetStatusText("Error: %s" % str(err), self.STATUS_HELP)
+      except (common.CompileSubsException) as err:
+        # Parser failed in an uninteresting way.
+        logging.error(str(err))
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Error: %s" % str(err)})
 
-    except (Exception) as err:
-      logging.exception(err)
-      self.statusbar.SetStatusText("Error: The parser failed in an unexpected way.", self.STATUS_HELP)
+      except (Exception) as err:
+        logging.exception(err)
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Error: The parser failed in an unexpected way."})
+
+    t = killable_threading.WrapperThread()
+    t.set_payload(threaded_code)
+    t.start()
+    global_config.get_cleanup_handler().add_thread(t)
 
     if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_export(self, e):
-    try:
-      config = self._snarks_wrapper.clone_config()
-      snarks = self._snarks_wrapper.clone_snarks()
+    config = self._snarks_wrapper.clone_config()
+    snarks = self._snarks_wrapper.clone_snarks()
 
-      snarkutils.gui_postprocess_snarks(config, snarks)
-      if (len(snarks) == 0):
-        common.CompileSubsException("After postprocessing, no messages were left.")
+    def threaded_code(config=config, snarks=snarks, keep_alive_func=None, sleep_func=None):
+      try:
+        snarkutils.gui_postprocess_snarks(config, snarks)
+        if (len(snarks) == 0):
+          common.CompileSubsException("After postprocessing, no messages were left.")
 
-      logging.info("Calling %s exporter..." % config.exporter_name)
-      self.statusbar.SetStatusText("Calling %s exporter..." % config.exporter_name, self.STATUS_HELP)
-      snarkutils.export_snarks(config, snarks)
+        logging.info("Calling %s exporter..." % config.exporter_name)
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Calling %s exporter..." % config.exporter_name})
+        snarkutils.export_snarks(config, snarks, keep_alive_func=None, sleep_func=None)
 
-      logging.info("Export succeeded.")
-      self.statusbar.SetStatusText("Export succeeded.", self.STATUS_HELP)
+        logging.info("Export succeeded.")
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Export succeeded."})
 
-    except (common.CompileSubsException) as err:
-      # Exporter failed in an uninteresting way.
-      logging.error(str(err))
-      self.statusbar.SetStatusText("Error: %s" % str(err), self.STATUS_HELP)
+      except (common.CompileSubsException) as err:
+        # Exporter failed in an uninteresting way.
+        logging.error(str(err))
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Error: %s" % str(err)})
 
-    except (Exception) as err:
-      logging.exception(err)
-      self.statusbar.SetStatusText("Error: The exporter failed in an unexpected way.", self.STATUS_HELP)
+      except (Exception) as err:
+        logging.exception(err)
+        wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Error: The exporter failed in an unexpected way."})
+
+    t = killable_threading.WrapperThread()
+    t.set_payload(threaded_code)
+    t.start()
+    global_config.get_cleanup_handler().add_thread(t)
 
     if (e is not None): e.Skip(False)  # Consume the event.
 
@@ -403,7 +423,7 @@ class PlayerFrame(wx.Frame):
     if (self.vlc_player.play() != -1):
       self.pulse_timer.Start(milliseconds=250)
     else:
-      self.statusbar.SetStatusText("Error: Unable to play.", self.STATUS_HELP)
+      self.set_status_text("Error: Unable to play.", self.STATUS_HELP)
 
     if (e is not None): e.Skip(False)  # Consume the event.
 
@@ -418,7 +438,7 @@ class PlayerFrame(wx.Frame):
   def _on_seek_minus_ten(self, e):
     vlc_milliseconds = self.vlc_player.get_time()
     if (vlc_milliseconds == -1):
-      self.statusbar.SetStatusText("Error: VLC reported a bad time. Aborting seek.", self.STATUS_HELP)
+      self.set_status_text("Error: VLC reported a bad time. Aborting seek.", self.STATUS_HELP)
     else:
       self.vlc_player.set_time(vlc_milliseconds - 10*1000)
 
@@ -427,7 +447,7 @@ class PlayerFrame(wx.Frame):
   def _on_seek_plus_ten(self, e):
     vlc_milliseconds = self.vlc_player.get_time()
     if (vlc_milliseconds == -1):
-      self.statusbar.SetStatusText("Error: VLC reported a bad time. Aborting seek.", self.STATUS_HELP)
+      self.set_status_text("Error: VLC reported a bad time. Aborting seek.", self.STATUS_HELP)
     else:
       self.vlc_player.set_time(vlc_milliseconds + 10*1000)
 
@@ -453,7 +473,7 @@ class PlayerFrame(wx.Frame):
       if (self.vlc_player.is_playing() == 0):
         vlc_milliseconds = self.vlc_player.get_time()
         if (vlc_milliseconds >= 0):
-          self.statusbar.SetStatusText(self._time_string(vlc_milliseconds), self.STATUS_CLOCK)
+          self.set_status_text(self._time_string(vlc_milliseconds), self.STATUS_CLOCK)
 
     if (e is not None): e.Skip(True)  # Don't consume the event.
 
@@ -537,9 +557,9 @@ class PlayerFrame(wx.Frame):
         self._last_video_time = None
 
         #clock_string = "%s/%s" % (self._time_string(None), self._time_string(None))
-        #self.statusbar.SetStatusText(clock_string, self.STATUS_CLOCK)
-        self.statusbar.SetStatusText(self._time_string(None), self.STATUS_CLOCK)
-        self.statusbar.SetStatusText(self._time_string(None), self.STATUS_LENGTH)
+        #self.set_status_text(clock_string, self.STATUS_CLOCK)
+        self.set_status_text(self._time_string(None), self.STATUS_CLOCK)
+        self.set_status_text(self._time_string(None), self.STATUS_LENGTH)
       wx.CallAfter(f)
 
     elif (e.type == vlc.EventType.MediaPlayerTimeChanged):
@@ -557,9 +577,9 @@ class PlayerFrame(wx.Frame):
               self.snark_frame.set_video_time(vlc_milliseconds)
 
           #clock_string = "%s/%s" % (self._time_string(vlc_milliseconds), self._time_string(self.vlc_player.get_length()))
-          #self.statusbar.SetStatusText(clock_string, self.STATUS_CLOCK)
-          self.statusbar.SetStatusText(self._time_string(vlc_milliseconds), self.STATUS_CLOCK)
-          self.statusbar.SetStatusText(self._time_string(self.vlc_player.get_length()), self.STATUS_LENGTH)
+          #self.set_status_text(clock_string, self.STATUS_CLOCK)
+          self.set_status_text(self._time_string(vlc_milliseconds), self.STATUS_CLOCK)
+          self.set_status_text(self._time_string(self.vlc_player.get_length()), self.STATUS_LENGTH)
       wx.CallAfter(f)
 
     # VLC events have no Skip() to worry about.

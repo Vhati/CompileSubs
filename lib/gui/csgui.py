@@ -1,5 +1,8 @@
 import logging
 import Queue
+import sys
+import threading
+import webbrowser
 import wx
 
 from lib import arginfo
@@ -14,10 +17,10 @@ from lib.gui import vlcplayer
 class GuiApp(wx.App):
   def __init__(self, *args, **kwargs):
     self.ACTIONS = ["ACTION_SHOW_CONFIG", "ACTION_SHOW_PLAYER",
-                    "ACTION_DIE"]
+                    "ACTION_WARN", "ACTION_DIE"]
     for x in self.ACTIONS: setattr(self, x, x)
 
-    self.custom_args = {"snarks_wrapper":None}
+    self.custom_args = {}
     for k in self.custom_args.keys():
       if (k in kwargs):
         self.custom_args[k] = kwargs[k]
@@ -28,7 +31,6 @@ class GuiApp(wx.App):
     wx.App.__init__(self, *args, **kwargs)  # OnInit() runs here.
 
   def OnInit(self):
-    self._snarks_wrapper = self.custom_args["snarks_wrapper"]
     self._event_queue = Queue.Queue()
     self.player_frame = None
 
@@ -37,6 +39,46 @@ class GuiApp(wx.App):
     self.EVT_EVENT_ENQUEUED = wx.PyEventBinder(self.EVT_EVENT_ENQUEUED_TYPE, 1)
 
     self.Bind(self.EVT_EVENT_ENQUEUED, self.process_event_queue)
+
+    # Guify prompts.
+    def new_prompt_func(msg, hidden=False, notice=None, url=None):
+      return call_modal(gui_prompt, msg=msg, hidden=False, notice=notice, url=url)
+    common.prompt_func = new_prompt_func
+
+
+    try:
+      # Import the config module as an object that can
+      # be passed around, and suppress creation of pyc clutter.
+      #
+      sys.dont_write_bytecode = True
+      config = __import__("config")
+      sys.dont_write_bytecode = False
+      config = common.Changeling(config)  # A copy w/o module baggage.
+
+      snarks = []
+      self._snarks_wrapper = common.SnarksWrapper(config, snarks)
+
+      config_saver = common.Bunch()
+      def on_snarks_changed(e):
+        if (common.SnarksEvent.FLAG_CONFIG_ANY not in e.get_flags()):
+          return
+        try:
+          repr_str = snarkutils.config_repr(e.get_source().clone_config())
+          with open("./config_gui_backup.py", "w") as fudge_file:
+            fudge_file.write("# These settings were auto-saved when the GUI made changes.\n")
+            fudge_file.write("# To reuse them next time, rename this file to config.py.\n")
+            fudge_file.write("# Otherwise this file will be overwritten.\n\n")
+            fudge_file.write(repr_str)
+            fudge_file.write("\n")
+        except (Exception) as err:
+          logging.exception("Failed to save backup config.")
+
+      config_saver.on_snarks_changed = on_snarks_changed
+      self._snarks_wrapper.add_snarks_listener(config_saver)
+
+    except (Exception) as err:
+      logging.exception(err)
+      return False
 
 
     def config_continue_callback():
@@ -133,7 +175,10 @@ class GuiApp(wx.App):
 
   def _process_event(self, func_or_name, arg_dict):
     """Processes events queued via invoke_later().
-    ACTION_DIE
+    ACTION_SHOW_CONFIG(parent,continue_func,destroyed_func)
+    ACTION_SHOW_PLAYER()
+    ACTION_WARN(message)
+    ACTION_DIE()
     """
     def check_args(args):
       for arg in args:
@@ -158,12 +203,17 @@ class GuiApp(wx.App):
             config_frame.Bind(wx.EVT_WINDOW_DESTROY, arg_dict["destroyed_func"])
 
     elif (func_or_name == self.ACTION_SHOW_PLAYER):
-      if (self.player_frame is None):
+      if (not self.player_frame):
         self.player_frame = vlcplayer.PlayerFrame(None, wx.ID_ANY, "CompileSubs %s" % global_config.VERSION, self._snarks_wrapper)
         self.player_frame.Center()
         self.player_frame.Show()
         self.player_frame.init_vlc()
         self.player_frame.Bind(wx.EVT_WINDOW_DESTROY, self._on_frame_destroyed)
+
+    elif (func_or_name == self.ACTION_WARN):
+      if (check_args(["message"])):
+        if (self.player_frame):
+          self.player_frame.set_status_text(arg_dict["message"], self.player_frame.STATUS_HELP)
 
     elif (func_or_name == self.ACTION_DIE):
       # Close all top windows and let MainLoop expire.
@@ -177,3 +227,135 @@ class GuiApp(wx.App):
     event = wx.PyCommandEvent(self.EVT_EVENT_ENQUEUED_TYPE, wx.ID_ANY)
     wx.PostEvent(self, event)
     #wx.CallAfter(self.process_event_queue, None)
+
+
+class PromptDialog(wx.Dialog):
+  def __init__(self, *args, **kwargs):
+    self.custom_args = {"msg":None,"hidden":False,"notice":None,"url":None}
+    for k in self.custom_args.keys():
+      if (k in kwargs):
+        self.custom_args[k] = kwargs[k]
+        del kwargs[k]
+    if (self.custom_args["msg"] is None): self.custom_args["msg"] = ""
+
+    wx.Dialog.__init__(self, *args, **kwargs)
+
+    vbox = wx.BoxSizer(wx.VERTICAL)
+    vbox.Add((-1,20))
+    if (self.custom_args["notice"]):
+      notice_label = wx.StaticText(self, wx.ID_ANY, label=self.custom_args["notice"])
+      vbox.Add(notice_label, flag=wx.ALIGN_CENTER)
+      vbox.Add((-1,15))
+    if (self.custom_args["url"]):
+      url_btn = wx.HyperlinkCtrl(self, wx.ID_ANY, label="Browser Link", url=self.custom_args["url"])
+      url_btn.Bind(wx.EVT_HYPERLINK, self._on_link)
+      vbox.Add(url_btn, flag=wx.ALIGN_CENTER)
+      vbox.Add((-1,15))
+
+    field_sizer = wx.BoxSizer(wx.HORIZONTAL)
+    if (self.custom_args["msg"]):
+      msg_label = wx.StaticText(self, wx.ID_ANY, label=self.custom_args["msg"])
+      field_sizer.Add(msg_label, flag=wx.ALIGN_CENTER_VERTICAL)
+      field_sizer.Add((4,-1))
+
+      if (self.custom_args["hidden"]):
+        self._input_field = wx.TextCtrl(self, wx.ID_ANY, style=wx.TE_PASSWORD, size=(250,-1))
+      else:
+        self._input_field = wx.TextCtrl(self, wx.ID_ANY, size=(250,-1))
+    field_sizer.Add(self._input_field, 1, flag=wx.ALIGN_CENTER_VERTICAL)
+    vbox.Add(field_sizer, flag=wx.EXPAND|wx.LEFT|wx.RIGHT, border=10)
+
+    vbox.Add((-1,10))
+
+    button_sizer =  self.CreateButtonSizer(wx.OK)
+    self.Bind(wx.EVT_BUTTON, self._on_ok, id=wx.ID_YES)
+    vbox.Add(button_sizer, flag=wx.ALIGN_CENTER)
+    vbox.Add((-1,10))
+    self.SetSizer(vbox)
+
+    self._input_field.SetFocus()
+    self.Fit()
+
+  def _on_link(self, event):
+    try:
+      logging.info("Launching browser: %s" % self.custom_args["url"])
+      webbrowser.open_new_tab(self.custom_args["url"])
+    except (Exception) as err:
+      logging.error("Failed to launch browser: %s." % str(err))
+
+  def _on_ok(self, event):
+    self.Close()
+
+  def get_value(self):
+    return self._input_field.GetValue()
+
+
+def gui_prompt(msg, hidden=False, notice=None, url=None):
+  """Shows a PromptDialog and returns the user-provided value.
+  This must be called from the GUI thread.
+  """
+  result = None
+
+  parent = None
+  if (wx.GetApp().player_frame): parent = wx.GetApp().player_frame
+
+  d = PromptDialog(parent, wx.ID_ANY, "Prompt", msg=msg, hidden=hidden, notice=notice, url=url)
+  d.Center()
+  if (d.ShowModal() == wx.ID_OK):
+    result = d.get_value()
+    d.Destroy()
+  else:
+    d.Destroy()
+
+  return result
+
+
+def call_modal(modal_func, *args, **kwargs):
+  """Executes an arbitrary function in the GUI thread modally.
+  This is thread-safe. If called from the GUI thread, nothing
+  special happens. Otherwise the calling thread will block
+  while the function is scheduled in the GUI thread, and will
+  resume after it has returned or raised an exception. Then
+  this will return that value or re-raise that exception in
+  the original thread.
+
+  Any additional args will be passed to the function.
+
+  :param modal_func: A function to call in the GUI thread.
+  :returns: Whatever modal_func returns, or None if keep-alive becomes False.
+  :raises: Whatever modal_func raises.
+  """
+  if (wx.Thread_IsMain()):
+    return modal_func(*args, **kwargs)
+  else:
+    # Blocking until the global cleanup_handler kicks in
+    # is easier than the extra tracking to send a second
+    # GUI signal to close the popup it when a
+    # killable thread stops living.
+    keep_alive_func = global_config.keeping_alive
+
+    messenger = common.Bunch()
+    modal_event = threading.Event()
+
+    def main_code():
+      try:
+        messenger.result = modal_func(*args, **kwargs)
+      except (Exception) as err:
+        _, messenger.exception, messenger.traceback = sys.exc_info()
+      modal_event.set()
+
+    wx.CallAfter(main_code)
+    while (keep_alive_func()):
+      modal_event.wait(0.5)
+      if (modal_event.is_set()): break
+
+    if (modal_event.is_set()):
+      try:
+        return messenger.result
+      except (AttributeError) as err:
+        tb = messenger.traceback
+        del messenger.traceback
+        raise type(messenger.exception), messenger.exception, tb
+    else:
+      # Keep-alive returned False and interrupted the wait.
+      return None
