@@ -3,7 +3,7 @@ from lib import cleanup
 
 # Global constants.
 
-VERSION = "3.52"
+VERSION = "3.53"
 
 _settings_dir = "."
 _cleanup_handler = cleanup.CustomCleanupHandler()

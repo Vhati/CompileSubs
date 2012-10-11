@@ -36,11 +36,13 @@ class PlayerFrame(wx.Frame):
     self.ID_FILE_EXIT = wx.ID_EXIT
     self.ID_TOOLS_CONFIG = wx.NewId()
     self.ID_TOOLS_SNARKS = wx.NewId()
+    self.ID_TOOLS_LOG_NAGS = wx.NewId()
 
     self._snarks_wrapper = snarks_wrapper
     self._config = self._snarks_wrapper.clone_config()
     self._last_video_time = None
     self.snark_frame = None
+    self.show_log_nags = True
 
     self.vlc_obj = None
     self.vlc_player = None
@@ -66,6 +68,10 @@ class PlayerFrame(wx.Frame):
     self.Bind(wx.EVT_MENU, self._on_show_config, self.config_menuitem)
     self.snarks_menuitem = tools_menu.Append(self.ID_TOOLS_SNARKS, "Edit &Snarks...")
     self.Bind(wx.EVT_MENU, self._on_show_snarks, self.snarks_menuitem)
+    tools_menu.AppendSeparator()
+    self.log_nag_menuitem = tools_menu.AppendCheckItem(self.ID_TOOLS_LOG_NAGS, "Show &Log Popups")
+    tools_menu.Check(self.ID_TOOLS_LOG_NAGS, self.show_log_nags)
+    self.Bind(wx.EVT_MENU, lambda e: self.set_show_log_nags(e.IsChecked()), self.log_nag_menuitem)
     menubar.Append(tools_menu, "&Tools")
 
     self.SetMenuBar(menubar)
@@ -253,6 +259,10 @@ class PlayerFrame(wx.Frame):
     """Sets status bar text."""
     self.statusbar.SetStatusText(message, status_field)
 
+  def set_show_log_nags(self, b):
+    """Toggles whether a log window should automatically appear."""
+    self.show_log_nags = b
+
   def _time_string(self, milliseconds):
     """Converts milliseconds into a 0:00:00 string, or --:-- if given None."""
     if (milliseconds is None): return "--:--"
@@ -331,6 +341,9 @@ class PlayerFrame(wx.Frame):
       d.Destroy()
       if (user_cancelled is True): return
 
+    if (self.show_log_nags is True):
+      wx.GetApp().show_log_frame(self)
+
     config = self._snarks_wrapper.clone_config()
 
     def threaded_code(snarks_wrapper=self._snarks_wrapper, config=config, keep_alive_func=None, sleep_func=None):
@@ -390,6 +403,9 @@ class PlayerFrame(wx.Frame):
         user_cancelled = True
       d.Destroy()
       if (user_cancelled is True): return
+
+    if (self.show_log_nags is True):
+      wx.GetApp().show_log_frame(self)
 
     def threaded_code(config=config, snarks=snarks, keep_alive_func=None, sleep_func=None):
       try:

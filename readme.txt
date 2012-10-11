@@ -1,4 +1,4 @@
-CompileSubs v3.52
+CompileSubs v3.53
 
 Author:
   David Millis (tvtronix@yahoo.com)
@@ -51,6 +51,7 @@ in the ./share/ directory.
 
 Changes
 
+3.53 - Added a GUI log window.
 3.52 - Made global fudge_time and ignore_users adjustable w/o reparsing.
        Fixed glitchy volume control.
        Made twitter_search parser use the Tweepy subsystem.

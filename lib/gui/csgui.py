@@ -12,6 +12,7 @@ from lib import global_config
 from lib import snarkutils
 from lib.gui import config_ui
 from lib.gui import vlcplayer
+from lib.gui import wxlogging
 
 
 class GuiApp(wx.App):
@@ -32,6 +33,7 @@ class GuiApp(wx.App):
 
   def OnInit(self):
     self._event_queue = Queue.Queue()
+    self.log_frame = None
     self.player_frame = None
 
     # Events.
@@ -45,6 +47,12 @@ class GuiApp(wx.App):
       return call_modal(gui_prompt, msg=msg, hidden=False, notice=notice, url=url)
     common.prompt_func = new_prompt_func
 
+    # Setup the log window.
+    wx_handler = wxlogging.wxLogHandler(lambda: wx.GetApp().log_frame)
+    wx_formatter = logging.Formatter("%(asctime)s %(levelname)s (%(module)s): %(message)s", "%H:%M:%S")
+    wx_handler.setFormatter(wx_formatter)
+    wx_handler.setLevel(logging.INFO)
+    logging.getLogger().addHandler(wx_handler)
 
     try:
       # Import the config module as an object that can
@@ -212,6 +220,39 @@ class GuiApp(wx.App):
     sections = [config_section, parsers_section, exporters_section]
 
     return sections
+
+  def show_log_frame(self, parent):
+    """Creates and shows a log frame, if it doesn't already exist.
+
+    If parent resolves to False, parent will be set to the
+    player_frame, if available.
+
+    If a log frame exists with the same parent, it will gain focus.
+    Otherwise, it will be closed, and its text will be appended to
+    a new log frame.
+    """
+    if (not parent):
+      parent = None
+      if (self.player_frame):
+        parent = self.player_frame
+
+    prev_text = None
+    if (self.log_frame):
+      if (self.log_frame.GetParent() is parent):
+        self.log_frame.SetFocus()
+      else:
+        prev_text = self.log_frame.text.GetValue()
+        prev_frame = self.log_frame
+        self.log_frame = None
+        prev_frame.Close()
+
+    if (not self.log_frame):
+      self.log_frame = wxlogging.LogFrame(parent, wx.ID_ANY, "Log")
+      self.log_frame.SetSize((700, 200))
+      if (prev_text):
+        self.log_frame.text.AppendText(prev_text)
+      self.log_frame.Center()
+      self.log_frame.Show()
 
   def process_event_queue(self, event):
     """Processes every pending event on the queue."""
