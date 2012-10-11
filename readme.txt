@@ -56,6 +56,7 @@ Changes
        Made twitter_search parser use the Tweepy subsystem.
        Changed 'message'/'msg' to 'comment' in descriptions.
        Added "Are you sure?" nags to GUI parse/export.
+       Made Tweepy subsystem reauthenticate if it loaded bad credentials.
 3.51 - Added twitter_mentions parser.
        Added threading for parsers and exporters.
        Widened in-gui config text fields.

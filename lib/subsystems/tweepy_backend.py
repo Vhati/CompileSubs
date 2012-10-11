@@ -35,52 +35,92 @@ def init(keep_alive_func=None, sleep_func=None):
       if (keep_alive_func is None): keep_alive_func = global_config.keeping_alive
       if (sleep_func is None): sleep_func = global_config.nap
 
-      tweepy_config_path = os.path.join(global_config.get_settings_dir(), tweepy_config_name)
-      tweepy_auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-      try:
-        tweepy_config = ConfigParser.RawConfigParser()
-        tweepy_config.read(tweepy_config_path)
-        if (tweepy_config.has_section("Credentials")):
-          k = tweepy_config.get("Credentials", "access_key")
-          s = tweepy_config.get("Credentials", "access_secret")
-          if (k and s):
-            tweepy_auth.set_access_token(k, s)
+      temp_api = _load_credentials()
+      if (temp_api is not None): tweepy_api = temp_api
 
-      except (Exception) as err:
-        logging.error("Could not parse %s: %s" % (tweepy_config_path, str(err)))
+      if (keep_alive_func() is False): return is_ready()
 
-      try:
-        if (tweepy_auth.access_token is None):
-          logging.info("Getting authorization url...")
-          auth_url = tweepy_auth.get_authorization_url()
+      if (tweepy_api is None):
+        temp_api = _fetch_credentials()
+        if (temp_api is not None):
+          tweepy_api = temp_api
+          _save_credentials(tweepy_api)
 
-          notice = ("You need to authorize this application\n" +
-                    "to interact with Twitter on your behalf.")
-          verifier_string = common.prompt("PIN: ", notice=notice, url=auth_url)
+    return is_ready()
 
-          if (not verifier_string): raise tweepy.TweepError("No PIN was provided.")
 
-          logging.info("Using PIN to fetch an access token.")
-          tweepy_auth.get_access_token(verifier_string)
+def _load_credentials():
+  """Loads saved credentials.
+  If available and valid, a new Tweepy api object will be returned.
+  """
+  tweepy_config_path = os.path.join(global_config.get_settings_dir(), tweepy_config_name)
+  try:
+    tweepy_config = ConfigParser.RawConfigParser()
+    tweepy_config.read(tweepy_config_path)
+    if (tweepy_config.has_section("Credentials")):
+      k = tweepy_config.get("Credentials", "access_key")
+      s = tweepy_config.get("Credentials", "access_secret")
+      if (k and s):
+        tweepy_auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+        tweepy_auth.set_access_token(k, s)
 
         temp_api = tweepy.API(tweepy_auth)
         if (temp_api.verify_credentials()):
-          tweepy_api = temp_api
+          return temp_api
 
-        try:
-          tweepy_config = ConfigParser.RawConfigParser()
-          tweepy_config.add_section("Credentials")
-          tweepy_config.set("Credentials", "access_key", tweepy_auth.access_token.key)
-          tweepy_config.set("Credentials", "access_secret", tweepy_auth.access_token.secret)
-          with open(tweepy_config_path, "wb") as f: tweepy_config.write(f)
+  except (tweepy.TweepError) as err:
+    logging.error(str(err.reason))
 
-        except (Exception) as err:
-          logging.error("Could not write %s: %s" % (tweepy_config_path, str(err)))
+  except (Exception) as err:
+    logging.error("Could not parse %s: %s" % (tweepy_config_path, str(err)))
 
-      except (tweepy.TweepError) as err:
-        logging.error(str(err.reason))
+  return None
 
-    return is_ready()
+
+def _save_credentials(tweepy_api):
+  """Saves Tweepy credentials."""
+  tweepy_config_path = os.path.join(global_config.get_settings_dir(), tweepy_config_name)
+  try:
+    tweepy_config = ConfigParser.RawConfigParser()
+    tweepy_config.add_section("Credentials")
+    tweepy_config.set("Credentials", "access_key", tweepy_api.auth.access_token.key)
+    tweepy_config.set("Credentials", "access_secret", tweepy_api.auth.access_token.secret)
+    with open(tweepy_config_path, "wb") as f: tweepy_config.write(f)
+    return True
+
+  except (Exception) as err:
+    logging.error("Could not write %s: %s" % (tweepy_config_path, str(err)))
+
+  return False
+
+
+def _fetch_credentials():
+  """Asks Twitter for credentials.
+  If necessary, the user will be prompted for a PIN.
+  If valid, a new Tweepy api object will be returned.
+  """
+  try:
+    tweepy_auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    logging.info("Getting authorization url...")
+    auth_url = tweepy_auth.get_authorization_url()
+
+    notice = ("You need to authorize this application\n" +
+              "to interact with Twitter on your behalf.")
+    verifier_string = common.prompt("PIN: ", notice=notice, url=auth_url)
+
+    if (not verifier_string): raise tweepy.TweepError("No PIN was provided.")
+
+    logging.info("Using PIN to fetch an access token.")
+    tweepy_auth.get_access_token(verifier_string)
+
+    temp_api = tweepy.API(tweepy_auth)
+    if (temp_api.verify_credentials()):
+      return temp_api
+
+  except (tweepy.TweepError) as err:
+    logging.error(str(err.reason))
+
+  return None
 
 
 def is_ready():
