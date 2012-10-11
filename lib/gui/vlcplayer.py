@@ -10,11 +10,9 @@ from datetime import datetime, timedelta
 import logging
 import os
 import platform
-import Queue
 import re
 import sys
 import wx
-import wx.grid
 
 from lib import common
 from lib import global_config
@@ -322,6 +320,17 @@ class PlayerFrame(wx.Frame):
     if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_parse(self, e):
+    old_snarks = self._snarks_wrapper.clone_snarks()
+    if (len(old_snarks) > 0):
+      user_cancelled = False
+      d = wx.MessageDialog(self, "If you parse again, existing snarks will be lost.\nContinue?", "Are you sure?",
+                           wx.YES_NO|wx.NO_DEFAULT|wx.ICON_QUESTION)
+      d.Center()  # Doesn't work.
+      if (d.ShowModal() != wx.ID_YES):
+        user_cancelled = True
+      d.Destroy()
+      if (user_cancelled is True): return
+
     config = self._snarks_wrapper.clone_config()
 
     def threaded_code(snarks_wrapper=self._snarks_wrapper, config=config, keep_alive_func=None, sleep_func=None):
@@ -371,6 +380,16 @@ class PlayerFrame(wx.Frame):
   def _on_export(self, e):
     config = self._snarks_wrapper.clone_config()
     snarks = self._snarks_wrapper.clone_snarks()
+
+    if (len(snarks) == 0):
+      user_cancelled = False
+      d = wx.MessageDialog(self, "No snarks to export.\nThe result won't be very interesting.\nContinue?", "Are you sure?",
+                           wx.YES_NO|wx.NO_DEFAULT|wx.ICON_QUESTION)
+      d.Center()  # Doesn't work.
+      if (d.ShowModal() != wx.ID_YES):
+        user_cancelled = True
+      d.Destroy()
+      if (user_cancelled is True): return
 
     def threaded_code(config=config, snarks=snarks, keep_alive_func=None, sleep_func=None):
       try:
