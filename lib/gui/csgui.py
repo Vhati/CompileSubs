@@ -354,9 +354,7 @@ def gui_prompt(msg, hidden=False, notice=None, url=None):
   d.Center()
   if (d.ShowModal() == wx.ID_OK):
     result = d.get_value()
-    d.Destroy()
-  else:
-    d.Destroy()
+  d.Destroy()
 
   return result
 

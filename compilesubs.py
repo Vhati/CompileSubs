@@ -40,15 +40,15 @@ if __name__ == "__main__":
   logger.setLevel(logging.DEBUG)
 
   logstream_handler = logging.StreamHandler()
-  logger.addHandler(logstream_handler)
   logstream_formatter = logging.Formatter("%(levelname)s (%(module)s): %(message)s")
   logstream_handler.setFormatter(logstream_formatter)
   logstream_handler.setLevel(logging.INFO)
+  logger.addHandler(logstream_handler)
 
   logfile_handler = logging.FileHandler("./log.txt", mode="w")
-  logger.addHandler(logfile_handler)
   logfile_formatter = logging.Formatter("%(asctime)s %(levelname)s (%(module)s): %(message)s", "%Y-%m-%d %H:%M:%S")
   logfile_handler.setFormatter(logfile_formatter)
+  logger.addHandler(logfile_handler)
 
   # wx doesn't have a better exception mechanism.
   sys.excepthook = create_exception_handler(logger, None)
