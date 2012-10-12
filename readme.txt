@@ -52,6 +52,9 @@ in the ./share/ directory.
 Changes
 
 3.53 - Added a GUI log window.
+       Fixed a crash when seeking to 0:00, before the first snark.
+       Fixed regressions that broke the GUI's config auto-saving.
+       Fixed regressions that broke the GUI's exporting.
 3.52 - Made global fudge_time and ignore_users adjustable w/o reparsing.
        Fixed glitchy volume control.
        Made twitter_search parser use the Tweepy subsystem.

@@ -66,7 +66,8 @@ class GuiApp(wx.App):
       snarks = []
       self._snarks_wrapper = common.SnarksWrapper(config, snarks)
 
-      config_saver = common.Bunch()
+      # Don't let config_saver get garbage collected.
+      self._config_saver = common.Bunch()
       def on_snarks_changed(e):
         if (common.SnarksEvent.FLAG_CONFIG_ANY not in e.get_flags()):
           return
@@ -81,8 +82,8 @@ class GuiApp(wx.App):
         except (Exception) as err:
           logging.exception("Failed to save backup config.")
 
-      config_saver.on_snarks_changed = on_snarks_changed
-      self._snarks_wrapper.add_snarks_listener(config_saver)
+      self._config_saver.on_snarks_changed = on_snarks_changed
+      self._snarks_wrapper.add_snarks_listener(self._config_saver)
 
     except (Exception) as err:
       logging.exception(err)
@@ -120,12 +121,15 @@ class GuiApp(wx.App):
         setattr(config, k, v)
 
       # Determine what changed, assuming everything, at first.
+      # Each section flag may be removed, but we'll keep ANY to be safe.
       event_flags = []
       for section_list in common.SnarksEvent.SECTION_FLAGS:
         if (section_list[0] == common.SnarksEvent.FLAG_CONFIG_ALL):
           for f in section_list[2]:
             if (f not in event_flags):
               event_flags.append(f)  # Add section flag.
+          if (section_list[1] not in event_flags):
+            event_flags.append(section_list[1])  # Add *_ANY.
         break
 
       def toggle_flag(event_flags, flag, expression):
@@ -156,6 +160,8 @@ class GuiApp(wx.App):
           snark.pop("_globally fudged time", None)
         snarkutils.gui_fudge_users(config, snarks)
         toggle_flag(event_flags, common.SnarksEvent.FLAG_SNARKS, True)
+      else:
+        toggle_flag(event_flags, common.SnarksEvent.FLAG_CONFIG_FUDGES, False)
 
       toggle_flag(event_flags, common.SnarksEvent.FLAG_CONFIG_SHOW_TIME,
                   (config.show_time != old_config.show_time))

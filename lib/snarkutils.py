@@ -267,7 +267,7 @@ def gui_postprocess_snarks(config, snarks):
   This will modify the snarks list in-place.
   """
   # Omit ignored snarks.
-  snarks[:] = [s for s in snarks if ("_ignored" in s and s["_ignored"])]
+  snarks[:] = [s for s in snarks if (not ("_ignored" in s and s["_ignored"]))]
 
   # Omit snarks that got shifted into negative times.
   snarks[:] = [x for x in snarks if (abs(x["time"]) == x["time"])]

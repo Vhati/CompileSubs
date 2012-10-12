@@ -325,18 +325,19 @@ class SnarkFrame(wx.Frame):
         self.snark_grid.ForceRefresh()
 
         # If within the duration of a snark's show time, display it.
-        last_video_snark = self._snarks[self._last_video_row]
-        if (abs(common.delta_seconds(last_video_snark["time"]) - seconds) <= common.delta_seconds(self._config.show_time)):
-          # Back up a bit to collate simultaneous snarks.
-          msgs = []
-          for i in range(self._last_video_row, -1, -1):
-            snark = self._snarks[i]
-            if (snark["time"] != last_video_snark["time"]): break
-            if ("_ignored" in snark and snark["_ignored"]): continue
-            msgs.insert(0, "%s: %s" % (snark["user"], snark["msg"]))
-          msg = "\n".join(msgs)
-          if (len(msg) > 0):
-            wx.GetApp().player_frame.show_vlc_message(msg)
+        if (self._last_video_row is not None):
+          last_video_snark = self._snarks[self._last_video_row]
+          if (abs(common.delta_seconds(last_video_snark["time"]) - seconds) <= common.delta_seconds(self._config.show_time)):
+            # Back up a bit to collate simultaneous snarks.
+            msgs = []
+            for i in range(self._last_video_row, -1, -1):
+              snark = self._snarks[i]
+              if (snark["time"] != last_video_snark["time"]): break
+              if ("_ignored" in snark and snark["_ignored"]): continue
+              msgs.insert(0, "%s: %s" % (snark["user"], snark["msg"]))
+            msg = "\n".join(msgs)
+            if (len(msg) > 0):
+              wx.GetApp().player_frame.show_vlc_message(msg)
 
   def _update_video_row(self):
     """Determines the most recent row number, relative to video time.
@@ -344,6 +345,7 @@ class SnarkFrame(wx.Frame):
     :returns: True if the row has changed, False otherwise.
     """
     if (self._last_video_time is None):
+      # Clear the video row.
       if (self._last_video_row is not None):
         self._last_video_row = None
         return True
@@ -477,7 +479,7 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
     return str(row)
 
   def set_video_row(self, row):
-    """Sets the row of the most recently visible snark."""
+    """Sets the row of the most recently visible snark, or None."""
     self._last_video_row = row
 
   def set_data(self, config, snarks):

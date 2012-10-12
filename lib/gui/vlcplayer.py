@@ -411,7 +411,7 @@ class PlayerFrame(wx.Frame):
       try:
         snarkutils.gui_postprocess_snarks(config, snarks)
         if (len(snarks) == 0):
-          common.CompileSubsException("After postprocessing, no messages were left.")
+          raise common.CompileSubsException("After postprocessing, no messages were left.")
 
         logging.info("Calling %s exporter..." % config.exporter_name)
         wx.GetApp().invoke_later(wx.GetApp().ACTION_WARN, {"message":"Calling %s exporter..." % config.exporter_name})
