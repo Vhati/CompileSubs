@@ -53,6 +53,7 @@ Changes
 
 3.54 - Fixed crash when deleting fudges when there were 0 snarks.
        Fixed mangling of snark times when applying a new global fudge.
+       Fixed percents and dollar signs in previewed subtitles.
 3.53 - Added a GUI log window.
        Fixed a crash when seeking to 0:00, before the first snark.
        Fixed regressions that broke the GUI's config auto-saving.

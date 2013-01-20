@@ -636,6 +636,8 @@ class PlayerFrame(wx.Frame):
 
   def show_vlc_message(self, text):
     """Displays a string over vlc's video."""
+    text = re.sub("%", "%%", text)
+    text = re.sub("[$]", "$$", text)
     self.vlc_player.video_set_marquee_string(vlc.VideoMarqueeOption.Text, text)
 
   def set_vlc_time(self, milliseconds):
