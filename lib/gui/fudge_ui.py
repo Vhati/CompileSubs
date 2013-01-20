@@ -62,7 +62,7 @@ class FudgeFrame(wx.Frame):
     ctrl_sizer.Add((5,-1))
     self._delete_btn = wx.Button(ctrl_panel, label="Delete", style=wx.BU_EXACTFIT)
     self._shrink_button(self._delete_btn)
-    self._set_status_tip(self._delete_btn, "Delete selected fudge.")
+    self._set_status_tip(self._delete_btn, "Delete selected fudges.")
     self._delete_btn.Bind(wx.EVT_BUTTON, self._on_delete)
     ctrl_sizer.Add(self._delete_btn, flag=wx.ALIGN_CENTER_VERTICAL)
 
@@ -225,9 +225,11 @@ class FudgeFrame(wx.Frame):
       self._snarks_wrapper.checkout(self.__class__.__name__)
       config = self._snarks_wrapper.get_config()
 
-      doomed_user = self.fudge_table.GetValue(rows[0], self.fudge_table.COL_USER)
-      doomed_bookmark = common.delta_from_str(self.fudge_table.GetValue(rows[0], self.fudge_table.COL_GLOBALLY_FUDGED_TIME))
-      snarkutils.config_remove_user_fudge(config, doomed_user, doomed_bookmark)
+      rows.reverse()
+      for row in rows:
+        doomed_user = self.fudge_table.GetValue(row, self.fudge_table.COL_USER)
+        doomed_bookmark = common.delta_from_str(self.fudge_table.GetValue(row, self.fudge_table.COL_GLOBALLY_FUDGED_TIME))
+        snarkutils.config_remove_user_fudge(config, doomed_user, doomed_bookmark)
 
       snarkutils.gui_fudge_users(config, self._snarks_wrapper.get_snarks())
       self._snarks_wrapper.commit()
