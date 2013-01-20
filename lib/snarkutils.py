@@ -236,6 +236,9 @@ def gui_fudge_users(config, snarks):
 
   This will modify the snarks list in-place.
   """
+  # Sort the msgs by their real-world date (to obtain the first snark).
+  snarks[:] = sorted(snarks, key=lambda k: k["date"])
+
   for snark in snarks:
     # Revert each snark's time to its globally fudged time.
     if ("_globally fudged time" not in snark):
