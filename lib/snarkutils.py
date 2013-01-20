@@ -449,7 +449,11 @@ def get_random_colors(count):
                    ("softened-orange", "CC8000"),
                    ("softened-green", "00CC00"),
                    ("lighter-yellowish-brown", "795335"),
-                   ("lighter-strong-violet", "73579A")
+                   ("lighter-strong-violet", "73579A"),
+                   ("kelly-pale-green", "409565"),
+                   ("lighterer-yellowish-brown", "997355"),
+                   ("lighterer-strong-violet", "9579BC"),
+                   ("lighter-goldenrod", "DEBC4A")
                    ]
   random.shuffle(color_library)
   color_library *= (count // len(color_library)) + 1
