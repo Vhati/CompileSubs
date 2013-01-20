@@ -46,7 +46,7 @@ class Config(object):
                 description="Delay all comments (+/-)."))
     args.append(arginfo.Arg(name="ignore_users", type=arginfo.STRING,
                 required=False, default=None, choices=None, multiple=True,
-                description="Users to ignore."))
+                description="Users to ignore (Example: @steve)."))
     args.append(arginfo.Arg(name="end_time", type=arginfo.TIMEDELTA,
                 required=False, default=None, choices=None, multiple=False,
                 description="Optional in-movie time to truncate comments (after fudging).\nUse this to skip late comments."))

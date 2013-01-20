@@ -1,4 +1,4 @@
-CompileSubs v3.53
+CompileSubs v3.54
 
 Author:
   David Millis (tvtronix@yahoo.com)
@@ -51,6 +51,7 @@ in the ./share/ directory.
 
 Changes
 
+3.54 - Fixed crash when deleting fudges when there were 0 snarks.
 3.53 - Added a GUI log window.
        Fixed a crash when seeking to 0:00, before the first snark.
        Fixed regressions that broke the GUI's config auto-saving.

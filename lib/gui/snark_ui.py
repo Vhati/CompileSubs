@@ -165,7 +165,7 @@ class SnarkFrame(wx.Frame):
     if (snarks_changed): self._snarks = self._snarks_wrapper.clone_snarks()
     self.snark_table.set_data(self._config, self._snarks)
 
-    if (snarks_changed and prev_row_count == 0):
+    if (snarks_changed and prev_row_count == 0 and len(self._snarks) > 0):
       self.snark_grid.AutoSizeColumn(self.snark_table.COL_FINAL_TIME)
       self.snark_grid.AutoSizeColumn(self.snark_table.COL_GLOBALLY_FUDGED_TIME)
       self.snark_grid.AutoSizeColumn(self.snark_table.COL_USER_FUDGE)
@@ -456,6 +456,10 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
     else:
       attr = wx.grid.GridCellAttr()
 
+    if (row >= len(self._snarks)):
+      logging.warn("Snark table attempted to display row %d when only %d were present." % (row, len(self._snarks)))
+      return attr
+
     snark = self._snarks[row]
     if (self._last_video_row is not None and row == self._last_video_row):
       # Highlight the most recent snark according to video time.
@@ -493,12 +497,14 @@ class SnarkGridTable(wx.grid.PyGridTableBase):
       gridview = None
 
     if (gridview is not None): gridview.BeginBatch()
-    grid_msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED, 0, len(self._snarks))
+    if (gridview is not None and len(self._snarks) > 0):
+      grid_msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED, 0, len(self._snarks))
+      gridview.ProcessTableMessage(grid_msg)
     self._snarks = []
-    if (gridview is not None): gridview.ProcessTableMessage(grid_msg)
 
     if (config is not None): self._config = config
     if (snarks is not None): self._snarks = snarks
-    grid_msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED, len(self._snarks))
-    if (gridview is not None): gridview.ProcessTableMessage(grid_msg)
+    if (gridview is not None and len(self._snarks) > 0):
+      grid_msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED, len(self._snarks))
+      gridview.ProcessTableMessage(grid_msg)
     if (gridview is not None): gridview.EndBatch()
