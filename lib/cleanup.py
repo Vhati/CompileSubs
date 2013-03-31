@@ -58,6 +58,7 @@ class CleanupHandler(object):
     # If a signal handler called this, we're in MainThread,
     #   blocking mainloop(), so do cleaning up in a separate thread.
     t = threading.Thread(target=self._cleanup, name="CleanupWorker")
+    t.daemon = False  # Don't trust inheritance from current thread.
     t.start()
 
   def _cleanup(self):
@@ -175,6 +176,6 @@ class CustomCleanupHandler(CleanupHandler):
       if (err.errno == errno.EINTR):  # Ignore sigint'd sleep() on Windows.
         pass
       else:
-        logging.exception(err)  #raise
+        logging.exception(err)
 
     os._exit(0)  # Exit for real, unlike sys.exit().

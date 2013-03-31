@@ -45,7 +45,7 @@ if __name__ == "__main__":
   logstream_handler.setLevel(logging.INFO)
   logger.addHandler(logstream_handler)
 
-  logfile_handler = logging.FileHandler("./log.txt", mode="w")
+  logfile_handler = logging.FileHandler(os.path.join(self_folder, "log.txt"), mode="w")
   logfile_formatter = logging.Formatter("%(asctime)s %(levelname)s (%(module)s): %(message)s", "%Y-%m-%d %H:%M:%S")
   logfile_handler.setFormatter(logfile_formatter)
   logger.addHandler(logfile_handler)
