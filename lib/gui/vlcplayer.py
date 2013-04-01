@@ -18,6 +18,7 @@ from lib import common
 from lib import global_config
 from lib import killable_threading
 from lib import snarkutils
+from lib.gui import color_ui
 from lib.gui import snark_ui
 from lib.gui import vlc
 
@@ -36,12 +37,14 @@ class PlayerFrame(wx.Frame):
     self.ID_FILE_EXIT = wx.ID_EXIT
     self.ID_TOOLS_CONFIG = wx.NewId()
     self.ID_TOOLS_SNARKS = wx.NewId()
+    self.ID_TOOLS_PALETTE = wx.NewId()
     self.ID_TOOLS_LOG_NAGS = wx.NewId()
 
     self._snarks_wrapper = snarks_wrapper
     self._config = self._snarks_wrapper.clone_config()
     self._last_video_time = None
     self.snark_frame = None
+    self.palette_frame = None
     self.show_log_nags = True
 
     self.vlc_obj = None
@@ -68,6 +71,8 @@ class PlayerFrame(wx.Frame):
     self.Bind(wx.EVT_MENU, self._on_show_config, self.config_menuitem)
     self.snarks_menuitem = tools_menu.Append(self.ID_TOOLS_SNARKS, "Edit &Snarks...")
     self.Bind(wx.EVT_MENU, self._on_show_snarks, self.snarks_menuitem)
+    self.palette_menuitem = tools_menu.Append(self.ID_TOOLS_PALETTE, "Edit C&olors...")
+    self.Bind(wx.EVT_MENU, self._on_show_palette, self.palette_menuitem)
     tools_menu.AppendSeparator()
     self.log_nag_menuitem = tools_menu.AppendCheckItem(self.ID_TOOLS_LOG_NAGS, "Show &Log Popups")
     tools_menu.Check(self.ID_TOOLS_LOG_NAGS, self.show_log_nags)
@@ -327,6 +332,25 @@ class PlayerFrame(wx.Frame):
       if (e is not None): e.Skip(False)  # Consume the event.
 
     self.snark_frame.Bind(wx.EVT_WINDOW_DESTROY, destroyed_callback)
+    if (e is not None): e.Skip(False)  # Consume the event.
+
+  def _on_show_palette(self, e):
+    """Shows the Palette window and toggles the menuitem."""
+    self.palette_frame = color_ui.PaletteFrame(self, wx.ID_ANY, "Colors")
+    self.palette_frame.CenterOnParent()
+    self.palette_frame.Show()
+    self.palette_menuitem.Enable(False)
+
+    def destroyed_callback(e):
+      def after_func(source=e.GetEventObject()):
+        if (self):  # After destruction, bool(self) is False.
+          if (source is self.palette_frame):
+            self.palette_frame = None
+            self.palette_menuitem.Enable(True)
+      wx.CallAfter(after_func)  # Let destruction finish.
+      if (e is not None): e.Skip(False)  # Consume the event.
+
+    self.palette_frame.Bind(wx.EVT_WINDOW_DESTROY, destroyed_callback)
     if (e is not None): e.Skip(False)  # Consume the event.
 
   def _on_parse(self, e):

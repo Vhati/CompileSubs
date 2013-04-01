@@ -13,6 +13,29 @@ from lib import global_config
 random.seed()
 
 
+color_library = [{"use":True, "hex":"FFFFFF", "name":"white"},
+                 {"use":True, "hex":"808080", "name":"boynton-gray"},
+                 {"use":True, "hex":"CC8080", "name":"softened-pink"},
+                 {"use":True, "hex":"803E75", "name":"kelly-strong-purple"},
+                 {"use":True, "hex":"73579A", "name":"lighter-strong-violet"},
+                 {"use":True, "hex":"9579BC", "name":"lighterer-strong-violet"},
+                 {"use":True, "hex":"CC00CC", "name":"softened-magenta"},
+                 {"use":True, "hex":"00538A", "name":"kelly-strong-blue"},
+                 {"use":True, "hex":"408080", "name":"blue-green"},
+                 {"use":True, "hex":"A6BDD7", "name":"kelly-very-light-blue"},
+                 {"use":True, "hex":"795335", "name":"lighter-yellowish-brown"},
+                 {"use":True, "hex":"997355", "name":"lighterer-yellowish-brown"},
+                 {"use":True, "hex":"CC8000", "name":"softened-orange"},
+                 {"use":True, "hex":"CEA262", "name":"kelly-grayish-yellow"},
+                 {"use":True, "hex":"DEBC4A", "name":"lighter-goldenrod"},
+                 {"use":True, "hex":"FECC5A", "name":"softened-yellow"},
+                 {"use":True, "hex":"FFB300", "name":"kelly-vivid-yellow"},
+                 {"use":True, "hex":"00CC00", "name":"softened-green"},
+                 {"use":True, "hex":"007D34", "name":"kelly-vivid-green"},
+                 {"use":True, "hex":"409565", "name":"kelly-pale-green"},
+                 {"use":True, "hex":"C0C060", "name":"olive"}]
+
+
 def config_remove_user_fudge(config, user, bookmark_delta):
   """Removes per-user fudges at a specific time from a config object.
 
@@ -402,6 +425,16 @@ def list_exporters():
   return result
 
 
+def set_color_library(new_library):
+  """Replaces the current color library."""
+  global color_library
+  color_library = new_library
+
+def get_color_library():
+  """Returns a copy of the current color library."""
+  global color_library
+  return color_library[:]
+
 def get_random_colors(count):
   """Gets a list of arbitrary colors.
    I had a fancy HSV randomizer with the colorsys module,
@@ -412,53 +445,11 @@ def get_random_colors(count):
   :param count: The number of colors needed (too many, and you'll get white).
   :return: A list of RGB float tuples (0.0-1.0).
   """
-  color_library = [("white", "FFFFFF"),
-                   ("kelly-vivid-yellow", "FFB300"),
-                   ("kelly-strong-purple", "803E75"),
-                   #("kelly-vivid-orange", "FF6800"),
-                   ("kelly-very-light-blue", "A6BDD7"),
-                   ##("kelly-vivid-red", "C10020"),
-                   ("kelly-grayish-yellow", "CEA262"),
-                   #("kelly-medium-gray", "817066"),
-                   ("kelly-vivid-green", "007D34"),
-                   #("kelly-strong-purplish-pink", "F6768E"),
-                   ("kelly-strong-blue", "00538A"),
-                   #("kelly-strong-yellowish-pink", "FF7A5C"),
-                   ##("kelly-strong-violet", "53377A"),
-                   #("kelly-vivid-orange-yellow", "FF8E00"),
-                   #("kelly-strong-purplish-red", "B32851"),
-                   #("kelly-vivid-greenish-yellow", "F4C800"),
-                   ##("kelly-strong-reddish-brown", "7F180D"),
-                   #("kelly-vivid-yellowish-green", "93AA00"),
-                   ##("kelly-deep-yellowish-brown", "593315"),
-                   #("kelly-reddish-orange", "F13A13"),
-                   ##("kelly-dark-olive-green", "232C16"),
-                   #("boynton-blue", "0000FF"),
-                   #("boynton-red", "FF0000"),
-                   ##("boynton-green", "00FF00"),
-                   ##("boynton-yellow", "FFFF00"),
-                   ##("boynton-magenta", "FF00FF"),
-                   ##("boynton-pink", "FF8080"),
-                   ("boynton-gray", "808080"),
-                   #("boynton-brown", "800000"),
-                   ##("boynton-orange", "FF8000"),
-                   ("softened-pink", "CC8080"),
-                   ("softened-yellow", "FECC5A"),
-                   ##("softened-red", "C71E1E"),
-                   ("softened-magenta", "CC00CC"),
-                   ("softened-orange", "CC8000"),
-                   ("softened-green", "00CC00"),
-                   ("lighter-yellowish-brown", "795335"),
-                   ("lighter-strong-violet", "73579A"),
-                   ("kelly-pale-green", "409565"),
-                   ("lighterer-yellowish-brown", "997355"),
-                   ("lighterer-strong-violet", "9579BC"),
-                   ("lighter-goldenrod", "DEBC4A")
-                   ]
-  random.shuffle(color_library)
-  color_library *= (count // len(color_library)) + 1
+  colors = [x for x in get_color_library() if (x["use"])]
+  random.shuffle(colors)
+  colors *= (count // len(colors)) + 1
 
-  result = [common.hex_to_rgb(y) for (x,y) in color_library[:count]]
+  result = [common.hex_to_rgb(x["hex"]) for x in colors[:count]]
 
   return result
 
