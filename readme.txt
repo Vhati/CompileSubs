@@ -51,8 +51,8 @@ in the ./share/ directory.
 
 Changes
 
-3.55 - Added a GUI dialog to toggle potential random colors.
-3.54 - Fixed crash when deleting fudges when there were 0 snarks.
+3.54 - Added a GUI dialog to toggle potential random colors.
+       Fixed crash when deleting fudges when there were 0 snarks.
        Fixed mangling of snark times when applying a new global fudge.
        Fixed percents and dollar signs in previewed subtitles.
        Multiple fudges can be selected and deleted.
