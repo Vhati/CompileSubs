@@ -51,7 +51,7 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
 
   if (not src_path): raise common.ParserError("The %s parser requires the general arg, \"src_path\", to be set." % re.sub(".*[.]", "", __name__))
 
-  snark_ptn = re.compile("[^t]*\t([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})\t([0-9A-Fa-f]{6}?)\t([^\t]+)\t([^\t]+)")
+  snark_ptn = re.compile("[^t]*\t([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})\t(|[0-9A-Fa-f]{6})\t([^\t]+)\t([^\t]+)")
 
   # List of pattern/replacement tuples to strip reply topic from comments.
   reply_regexes = []
