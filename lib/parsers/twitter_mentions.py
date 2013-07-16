@@ -81,26 +81,32 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
     reply_regexes = [(re.compile(" +@"+ reply_name_escaped +" +", re.IGNORECASE), " "),
                      (re.compile(" *@"+ reply_name_escaped +" *", re.IGNORECASE), "")]
 
-    rate_status, rate_parsed = tweepy_backend.rate_limit_status()
-    api_hp = rate_parsed["remaining_hits"]
-    limit_reset_date = rate_parsed["reset_time"]
-
     mention_args = {"count":200, "include_entities":"false", "include_rts":"false"}
+    mention_rate = {"reset":None, "limit":0, "remaining":0, "res_family":"statuses", "res_name":"/statuses/mentions_timeline"}
     timeline_args = {"count":200, "include_entities":"false", "include_rts":"false"}
+    timeline_rate = {"reset":None, "limit":0, "remaining":0, "res_family":"statuses", "res_name":"/statuses/user_timeline"}
 
     searches = []
-    searches.append(("Mentions", tweepy_api.mentions, mention_args, 800))
-    searches.append(("Timeline", tweepy_api.user_timeline, timeline_args, 3200))
+    searches.append(("Mentions", tweepy_api.mentions_timeline, mention_args, 800, mention_rate))
+    searches.append(("Timeline", tweepy_api.user_timeline, timeline_args, 3200, timeline_rate))
 
-    for (search_type, tweepy_func, tweepy_func_args, search_cap) in searches:
+    def update_rate_info():
+      # Sets new rate info values for the searches.
+      rate_status = tweepy_api.rate_limit_status()
+      for (search_type, tweepy_func, tweepy_func_args, search_cap, rate_info) in searches:
+        rate_info.update(rate_status["resources"][rate_info["res_family"]][rate_info["res_name"]])
+
+    update_rate_info()
+
+    for (search_type, tweepy_func, tweepy_func_args, search_cap, rate_info) in searches:
       done = False
       query_count = 0
       results_count = 0
       last_max_id = None
 
-      while (keep_alive_func() and done is False and results_count < search_cap and api_hp > 0):
+      while (keep_alive_func() and done is False and results_count < search_cap and rate_info["remaining"] > 0):
         results = tweepy_func(**tweepy_func_args)
-        api_hp -= 1
+        rate_info["remaining"] -= 1
         if (not results):
           done = True
           break
@@ -149,20 +155,22 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
             done = True
             break
 
-          if (limit_reset_date is not None and datetime.utcnow() >= limit_reset_date):
-            rate_status, rate_parsed = tweepy_backend.rate_limit_status()
-            api_hp = rate_parsed["remaining_hits"]
-            limit_reset_date = rate_parsed["reset_time"]
-            logging.info("API limit has reset. Calls left: %d (Resets: %s)" % (api_hp, rate_parsed["reset_time_string"]))
+          if (rate_info["reset"] is not None and time.time() >= float(rate_info["reset"])):
+            update_rate_info()
 
-      if (done is False and api_hp <= 0):
-        logging.warning("Twitter API rate limit truncated results.")
+            reset_string = datetime.fromtimestamp(float(rate_info["reset"])).strftime("%Y-%m-%d %H:%M:%S")
+            logging.info("API limit for '%s' reset. Calls left: %d (Until %s)" % (rate_info["res_name"], rate_info["remaining"], reset_string))
+
+      if (done is False and rate_info["remaining"] <= 0):
+        logging.warning("Twitter API rate limit truncated results for '%s'." % rate_info["res_name"])
         break  # No more searches.
 
-    rate_status, rate_parsed = tweepy_backend.rate_limit_status()
-    logging.info("Twitter API calls left: %d/%d." % (rate_parsed["remaining_hits"], rate_parsed["hourly_limit"]))
-    logging.info("API limits will reset: %s." % (rate_parsed["reset_time_string"]))
-    logging.info("Current Time: %s UTC" % datetime.utcnow().strftime(rate_parsed["new_date_format"]))
+    update_rate_info()
+    logging.info("Twitter API calls left...")
+    for (search_type, tweepy_func, tweepy_func_args, search_cap, rate_info) in searches:
+      reset_string = datetime.fromtimestamp(float(rate_info["reset"])).strftime("%Y-%m-%d %H:%M:%S")
+      logging.info("'%s': %d (Until %s)." % (rate_info["res_name"], rate_info["remaining"], reset_string))
+    logging.info("Current Time: %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
   except (Exception) as err:
     logging.exception("Parser failed.")

@@ -144,6 +144,9 @@ def get_api():
 
 def rate_limit_status():
   """Requests rate limit info.
+  DEPRICATED: Twitter's 1.1 API broke this function.
+  Use tweepy_api.rate_limit_status() instead.
+
   This a convenience function that returns the standard dict,
   as well as an extra dict containing some of that info
   parsed into more useful forms.
