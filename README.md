@@ -35,3 +35,9 @@ and Linux; no idea about OSX.
     * http://www.videolan.org/vlc/
 * wxPython 2.8
     * http://www.wxpython.org/download.php
+
+&nbsp;
+
+**Note:** You can't mix 32bit and 64bit.
+
+VLC is typically 32bit, so you'll need 32bit Python to match. Though there's an experimental 64bit VLC...
