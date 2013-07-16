@@ -2,6 +2,7 @@ import contextlib
 from datetime import datetime, timedelta
 import pkgutil
 import random
+import re
 import shutil
 import string
 import StringIO
@@ -85,7 +86,7 @@ def config_repr(config):
     config_strings[x] = repr(getattr(config, x))
 
   # String lists.
-  for x in ["ignore_users"]:
+  for x in ["ignore_users", "ignore_regexes"]:
     config_strings[x] = repr(getattr(config, x))
 
   # Timedeltas.
@@ -221,7 +222,8 @@ def gui_preprocess_snarks(config, snarks):
   subject to user fudging later.
 
   A boolean "_ignored" key will be added: True for any
-  snark that's from an ignored user, False otherwise.
+  snark that's from an ignored user or whose msg includes an
+  ignored regex, False otherwise.
 
   No "color" is added.
 
@@ -238,12 +240,17 @@ def gui_preprocess_snarks(config, snarks):
   # Sort the msgs by their in-movie time.
   snarks[:] = sorted(snarks, key=lambda k: k["time"])
 
-  # Ignore users.
+  # Ignore users and regexes.
   for snark in snarks:
     if (snark["user"] in config.ignore_users):
       snark["_ignored"] = True
     else:
       snark["_ignored"] = False
+
+      for ptn in config.ignore_regexes:
+        if (re.search(ptn, snark["msg"])):
+          snark["_ignored"] = True
+          break
 
 
 def gui_fudge_users(config, snarks):
@@ -321,8 +328,8 @@ def gui_postprocess_snarks(config, snarks):
 
 def process_snarks(config, snarks):
   """Adds info to, and fudges, a list of recently parsed snarks.
-  Any snark that's early, late, or from an ignored user will be
-  removed. The result will be suitable for export_snarks().
+  Any snark that's early, late, or from an ignored user or regex
+  will be removed. The result will be suitable for export_snarks().
 
   A "time" key will be added, representing an in-movie offset
   from the first snark's "date", plus any global fudging,
@@ -347,8 +354,20 @@ def process_snarks(config, snarks):
           snark["time"] += fudge_value
           break
 
-  # Omit snarks from ignored users.
-  snarks[:] = [s for s in snarks if (s["user"] not in config.ignore_users)]
+  # Ignore users and regexes.
+  for snark in snarks:
+    if (snark["user"] in config.ignore_users):
+      snark["_ignored"] = True
+    else:
+      snark["_ignored"] = False
+
+      for ptn in config.ignore_regexes:
+        if (re.search(ptn, snark["msg"])):
+          snark["_ignored"] = True
+          break
+
+  # Omit ignored snarks.
+  snarks[:] = [s for s in snarks if (not ("_ignored" in s and s["_ignored"]))]
 
   # Omit snarks that got shifted into negative times.
   snarks[:] = [x for x in snarks if (abs(x["time"]) == x["time"])]

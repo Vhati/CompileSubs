@@ -59,6 +59,10 @@ ${fudge_users_block}
 #   Example: ["@Tom", "@Dick", "@Harry"]
 ignore_users = ${ignore_users}
 
+# A list of regexes to ignore comments based on content.
+#   Example: ["^RT "]
+ignore_regexes = ${ignore_regexes}
+
 
 # Optional in-movie time to truncate comments (after fudging).
 #   Use this to skip late comments, or set to None.

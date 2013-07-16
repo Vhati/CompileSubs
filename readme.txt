@@ -51,6 +51,7 @@ in the ./share/ directory.
 
 Changes
 
+3.55 - Added ignore_regexes config setting.
 3.54 - Added a GUI dialog to toggle potential random colors.
        Fixed crash when deleting fudges when there were 0 snarks.
        Fixed mangling of snark times when applying a new global fudge.

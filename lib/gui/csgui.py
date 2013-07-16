@@ -1,5 +1,6 @@
 import logging
 import Queue
+import re
 import sys
 import threading
 import webbrowser
@@ -139,13 +140,19 @@ class GuiApp(wx.App):
         else:
           if (flag in event_flags): event_flags.remove(flag)
 
-      if (config.ignore_users != old_config.ignore_users):
-        # Unignore the old list, Ignore the new list.
+      if (config.ignore_users != old_config.ignore_users or 
+          config.ignore_regexes != old_config.ignore_regexes):
         for snark in snarks:
           if (snark["user"] in config.ignore_users):
             snark["_ignored"] = True
-          elif (snark["user"] in old_config.ignore_users):
+          else:
             snark["_ignored"] = False
+
+            for ptn in config.ignore_regexes:
+              if (re.search(ptn, snark["msg"])):
+                snark["_ignored"] = True
+                break
+
         toggle_flag(event_flags, common.SnarksEvent.FLAG_SNARKS, True)
 
       if (config.fudge_time != old_config.fudge_time):

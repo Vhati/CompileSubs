@@ -61,6 +61,10 @@ fudge_users["@brx0"] = [(timedelta(minutes=0, seconds=0), timedelta(minutes=0, s
 #   Example: ["@Tom", "@Dick", "@Harry"]
 ignore_users = []
 
+# A list of regexes to ignore comments based on content.
+#   Example: ["^RT "]
+ignore_regexes = ["^RT "]
+
 
 # Optional in-movie time to truncate comments (after fudging).
 #   Use this to skip late comments, or set to None.

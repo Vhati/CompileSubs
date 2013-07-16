@@ -11,8 +11,8 @@ class Config(object):
 
     attrib_list = ["parser_name","exporter_name","src_path","dest_path",
                    "first_msg","fudge_time","fudge_users","ignore_users",
-                   "end_time","color_enabled","show_time","parser_options",
-                   "exporter_options"]
+                   "ignore_regexes","end_time","color_enabled","show_time",
+                   "parser_options","exporter_options"]
 
     if (src_config is not None):
       for a in attrib_list:
@@ -47,6 +47,9 @@ class Config(object):
     args.append(arginfo.Arg(name="ignore_users", type=arginfo.STRING,
                 required=False, default=None, choices=None, multiple=True,
                 description="Users to ignore (Example: @steve)."))
+    args.append(arginfo.Arg(name="ignore_regexes", type=arginfo.STRING,
+                required=False, default=None, choices=None, multiple=True,
+                description="Comment regexes to ignore."))
     args.append(arginfo.Arg(name="end_time", type=arginfo.TIMEDELTA,
                 required=False, default=None, choices=None, multiple=False,
                 description="Optional in-movie time to truncate comments (after fudging).\nUse this to skip late comments."))
