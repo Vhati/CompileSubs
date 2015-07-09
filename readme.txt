@@ -1,4 +1,4 @@
-CompileSubs v3.55
+CompileSubs v3.6
 
 Author:
   David Millis (tvtronix@yahoo.com)
