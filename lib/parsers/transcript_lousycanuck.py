@@ -72,7 +72,9 @@ def fetch_snarks(src_path, first_msg, options={}, keep_alive_func=None, sleep_fu
 
   lines = []
   try:
-    with contextlib.closing(urllib2.urlopen(src_path)) as snark_file:
+    headers = {"User-Agent":"Mozilla/5.0 (Windows NT 5.1; rv:27.0) Gecko/20100101 Firefox/27.0"}
+    req = urllib2.Request(src_path, None, headers=headers)
+    with contextlib.closing(urllib2.urlopen(req)) as snark_file:
       while (keep_alive_func()):
         line = snark_file.readline()
         if (line == ''): break

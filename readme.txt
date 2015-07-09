@@ -52,6 +52,7 @@ in the ./share/ directory.
 Changes
 
 3.6  - Updated requirement: wxPython 2.9.
+       Fixed transcript_lousycanuck parser (HTTP spoofing).
 3.55 - Added ignore_regexes config setting.
        Updated to Tweepy (2013-06-19) and Twitter 1.1 API.
 3.54 - Added a GUI dialog to toggle potential random colors.
