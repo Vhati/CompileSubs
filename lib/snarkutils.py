@@ -16,10 +16,13 @@ random.seed()
 
 color_library = [{"use":True, "hex":"FFFFFF", "name":"white"},
                  {"use":True, "hex":"808080", "name":"boynton-gray"},
+                 {"use":True, "hex":"BBBBBB", "name":"gray"},
                  {"use":True, "hex":"CC8080", "name":"softened-pink"},
+                 {"use":True, "hex":"DDBBBB", "name":"pale-softened-pink"},
                  {"use":True, "hex":"803E75", "name":"kelly-strong-purple"},
                  {"use":True, "hex":"73579A", "name":"lighter-strong-violet"},
                  {"use":True, "hex":"9579BC", "name":"lighterer-strong-violet"},
+                 {"use":True, "hex":"A589CC", "name":"lightererer-strong-violet"},
                  {"use":True, "hex":"CC00CC", "name":"softened-magenta"},
                  {"use":True, "hex":"00538A", "name":"kelly-strong-blue"},
                  {"use":True, "hex":"408080", "name":"blue-green"},
@@ -34,7 +37,9 @@ color_library = [{"use":True, "hex":"FFFFFF", "name":"white"},
                  {"use":True, "hex":"00CC00", "name":"softened-green"},
                  {"use":True, "hex":"007D34", "name":"kelly-vivid-green"},
                  {"use":True, "hex":"409565", "name":"kelly-pale-green"},
-                 {"use":True, "hex":"C0C060", "name":"olive"}]
+                 {"use":True, "hex":"77BB88", "name":"light-green"},
+                 {"use":True, "hex":"C0C060", "name":"olive"},
+                 {"use":True, "hex":"DEDE66", "name":"yellow"}]
 
 
 def config_remove_user_fudge(config, user, bookmark_delta):
