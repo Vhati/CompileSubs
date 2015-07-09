@@ -187,11 +187,12 @@ class PlayerFrame(wx.Frame):
     # Gotta mention marq in the instance for marquee methods to work.
     # Gotta show title for marquee to be visible.
     # Verbose -1 suppresses spam about "vlc_object_find_name" not being safe.
-    self.vlc_obj = vlc.Instance("--video-title-show --video-title-timeout 1 --sub-source marq --verbose -1")
+    self.vlc_obj = vlc.Instance("--video-title-show", "--video-title-timeout=1", "--sub-filter=logo:marq", "--verbose=-1")
+
     self.vlc_player = self.vlc_obj.media_player_new()
     self.vlc_event_manager = None
     show_time_milliseconds = common.delta_seconds(self._config.show_time)*1000
-    #self.vlc_player.video_set_marquee_int(vlc.VideoMarqueeOption.Enable, 1)
+    #self.vlc_player.video_set_marquee_int(vlc.VideoMarqueeOption.Enable, 1)  # Must enable while video is shown.
     self.vlc_player.video_set_marquee_int(vlc.VideoMarqueeOption.Position, vlc.Position.Bottom)
     self.vlc_player.video_set_marquee_int(vlc.VideoMarqueeOption.Refresh, 100)  # Milliseconds.
     self.vlc_player.video_set_marquee_int(vlc.VideoMarqueeOption.Timeout, show_time_milliseconds)  # Milliseconds. 0=Forever.
@@ -663,6 +664,8 @@ class PlayerFrame(wx.Frame):
     text = re.sub("%", "%%", text)
     text = re.sub("[$]", "$$", text)
     self.vlc_player.video_set_marquee_string(vlc.VideoMarqueeOption.Text, text)
+    self.vlc_player.video_set_marquee_int(vlc.VideoMarqueeOption.Enable, 1)
+    #logging.info("Marquee: %s" % text)
 
   def set_vlc_time(self, milliseconds):
     """Seeks to a new time in the video."""

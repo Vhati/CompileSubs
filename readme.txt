@@ -52,6 +52,7 @@ in the ./share/ directory.
 Changes
 
 3.6  - Updated requirement: wxPython 2.9.
+       Fixed invisible subtitles with VLC 2.1.x.
        Fixed transcript_lousycanuck parser (HTTP spoofing).
 3.55 - Added ignore_regexes config setting.
        Updated to Tweepy (2013-06-19) and Twitter 1.1 API.
