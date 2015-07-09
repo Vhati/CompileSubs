@@ -2,8 +2,8 @@
 
 # Do some basic imports, and set up logging to catch ImportError.
 import inspect
-import logging
 import locale
+import logging
 import os
 import sys
 

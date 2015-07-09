@@ -86,7 +86,7 @@ def write_snarks(dest_file, snarks, show_time, options={}, keep_alive_func=None,
     snark_msg = re.sub("\n", "<br/>", snark_msg)
 
     # Numerically escape exotic chars.
-    badchar_ptn = re.compile(eval(r'u"[&<>\"\u0080-\uffff]"'))
+    badchar_ptn = re.compile(eval(r'u"[\u0080-\uffff]"'))  # Removed &<>\" from [] brackets.
 
     snark_msg = re.sub(badchar_ptn, lambda m: ("&#%d;" % ord(m.group(0))), snark_msg)
 
