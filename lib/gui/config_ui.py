@@ -319,7 +319,7 @@ class ArgPanel(wx.Panel):
 
     self._value_spacer = wx.SizerItem()
     self._value_spacer.SetProportion(1)
-    self._value_spacer.SetSpacer((-1,-1))
+    self._value_spacer.AssignSpacer((-1,-1))
     value_sizer.AddItem(self._value_spacer)
 
     self._value_panel.SetSizer(value_sizer)
@@ -374,7 +374,7 @@ class ArgPanel(wx.Panel):
 
   def set_value_column_width(self, n):
     """Sets a spacer's width in the value column."""
-    self._value_spacer.SetSpacer((n,-1))
+    self._value_spacer.AssignSpacer((n,-1))
     self.Layout()
     self._relayout_parent()
 
@@ -588,6 +588,7 @@ class StaticWrapText(wx.PyControl):
     self.st = wx.StaticText(self, wx.ID_ANY, label="", style=style)
     self._raw_text = label
     self._wrapped_height = 50
+    self._rewrapping = False
     self._rewrap()
     self.Bind(wx.EVT_SIZE, self.OnSize)
 
@@ -605,7 +606,10 @@ class StaticWrapText(wx.PyControl):
 
   def OnSize(self, e):
     self.st.SetSize(self.GetSize())
-    self._rewrap()
+    if (not self._rewrapping):
+      self._rewrapping = True
+      self._rewrap()
+      self._rewrapping = False
     if (e is not None): e.Skip(True)
 
   def _rewrap(self):

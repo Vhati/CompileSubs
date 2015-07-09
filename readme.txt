@@ -51,6 +51,7 @@ in the ./share/ directory.
 
 Changes
 
+3.6  - Updated requirement: wxPython 2.9.
 3.55 - Added ignore_regexes config setting.
        Updated to Tweepy (2013-06-19) and Twitter 1.1 API.
 3.54 - Added a GUI dialog to toggle potential random colors.
@@ -124,7 +125,7 @@ Python 2.6 or higher, but not 3.x.
 VLC 2.x.x
   http://www.videolan.org/vlc/
 
-wxPython 2.8
+wxPython 2.9
   http://www.wxpython.org/download.php
 
 

@@ -33,7 +33,7 @@ and Linux; no idea about OSX.
     * http://www.python.org/getit/
 * VLC 2.x.x
     * http://www.videolan.org/vlc/
-* wxPython 2.8
+* wxPython 2.9
     * http://www.wxpython.org/download.php
 
 &nbsp;
